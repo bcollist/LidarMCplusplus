@@ -4,7 +4,10 @@
 #include <iostream>
 #include <random>
 #include <chrono>
+<<<<<<< HEAD
 #include <armadillo>
+=======
+>>>>>>> ee8a5ff4d08e8ba64342a220354bb6ce76f756e0
 #include "spline.h" // https://github.com/ttk592/spline/
 
 using namespace std;
@@ -22,9 +25,20 @@ double updateDirCosX(double theta, double phi, double mux, double muy, double mu
 double updateDirCosY(double theta, double phi, double mux, double muy, double muz);
 double updateDirCosZ(double theta, double phi, double mux, double muy, double muz);
 
+<<<<<<< HEAD
 double randArray(int); // create an array of random numbers from
 
 
+=======
+
+double randArray(int); // create an array of random numbers from
+
+
+
+
+
+
+>>>>>>> ee8a5ff4d08e8ba64342a220354bb6ce76f756e0
 // main function
 int main (){
 
@@ -49,8 +63,12 @@ double detectorArea = pi * detectorRadius ** 2; // detector area in (m)
 
 // detector position
 double xd = 0.04; double yd = 0; double zd = 0; // position of the detector in (m)
+<<<<<<< HEAD
 double fd; // variable used in detector photon geometry colculations
 double anglei; // angle of intersection between photon and detector plane
+=======
+
+>>>>>>> ee8a5ff4d08e8ba64342a220354bb6ce76f756e0
 
 // Define water column IOPs
 double a = 0.08; //absorption coefficient (m^-^1)
@@ -125,7 +143,11 @@ double pPsi[55] = {0.043292475, 0.051470904, 0.061194794, 0.07278701,  0.0866430
 
 // Main Code
 
+<<<<<<< HEAD
   for (int i = 0; i = nPhotons ; i++){      // loop through each individual photon
+=======
+  for (int i = 0; i = nPhotons ; i++){
+>>>>>>> ee8a5ff4d08e8ba64342a220354bb6ce76f756e0
 
     // Photon Position and Direction Initialization
     double x1 = 0; double y1 = 0; double z1 = 0; // initialize photon position 1
@@ -135,11 +157,16 @@ double pPsi[55] = {0.043292475, 0.051470904, 0.061194794, 0.07278701,  0.0866430
     double mux2 = 0; double muy2 = 0, double muz2 = 1; // initialize new direction cosine calculation variables
 
 
+<<<<<<< HEAD
     // Photon Status variable
+=======
+    // Photon Status variables
+>>>>>>> ee8a5ff4d08e8ba64342a220354bb6ce76f756e0
     int status = 1; // status variable 1 = alive 0 = DEAD
     double rTotal = 0; // total pathlength variable
     double weight = 1; // current weight of photon (omega^nscat)
     int nScat = 0; // number of scattering events so far
+<<<<<<< HEAD
       while (status == 1 && nScat < 10) {   // while the photon is still alive.....
         // Move Photon
         double r = -1 * log(rand())/c; // generate a random propegation distance
@@ -166,6 +193,17 @@ double pPsi[55] = {0.043292475, 0.051470904, 0.061194794, 0.07278701,  0.0866430
           }
         }
       }
+=======
+
+      while (status == 1 && nScat < 10) {
+        double r = -1 * log(rand())/c;
+
+      }
+
+
+
+
+>>>>>>> ee8a5ff4d08e8ba64342a220354bb6ce76f756e0
 }
 
 
@@ -226,6 +264,7 @@ double updateDirCosZ(double theta, double phi, double mux, double muy, double mu
   return muzPrime;
 }
 
+<<<<<<< HEAD
 double intersectionAngle(double x1,double y1,double z1,double x2,double y2,double z2){
 // intersectionAngle(c1,c2) - Calculates the intersection angle between a photon trajectory and the plane made by the lidar detector
 // In order to determine if a photon has entered the detector within the FOV of the detector, this function calculates the
@@ -256,6 +295,8 @@ double intersectionAngle(double x1,double y1,double z1,double x2,double y2,doubl
 //     return gamma;
 // }
 
+=======
+>>>>>>> ee8a5ff4d08e8ba64342a220354bb6ce76f756e0
 // double gammaCalc(muz1, muz2, theta, phi){
 //     double gammaCos
 //     double pi = 3.1415926535897932384626433832795028841971693993751058209749445923078164062;
