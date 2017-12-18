@@ -8,8 +8,7 @@
 #include "spline.h" // https://github.com/ttk592/spline/
 
 using namespace std;
-
-
+using namespace arma;
 
 /////////////////////// Function Prototypes ////////////////////////////
 
@@ -40,12 +39,7 @@ double detectorRad = 1.5e-1; // number of photons to trace
 double detectorDiam = detectorRad * 2; // detector diameter (m)
 double detectorArea = pi * detectorRad * detectorRad;
 double scatLimit = 4; // number of scattering events to trace
-double FOV = deg2rad(20); // half-angle FOV; enter in degrees -> converts to rad
-
-// detector size
-double detectorRadius = 1.5E-3; //detector radius in (m)
-double detectorDiameter = detectorRadius / 2; // detector diamater in (m)
-double detectorArea = pi * detectorRadius ** 2; // detector area in (m)
+double FOV = deg2Rad(20); // half-angle FOV; enter in degrees -> converts to rad
 
 // detector position
 double xd = 0.04; double yd = 0; double zd = 0; // position of the detector in (m)
@@ -230,16 +224,16 @@ double intersectionAngle(double x1,double y1,double z1,double x2,double y2,doubl
 // intersectionAngle(c1,c2) - Calculates the intersection angle between a photon trajectory and the plane made by the lidar detector
 // In order to determine if a photon has entered the detector within the FOV of the detector, this function calculates the
 // angle between the unit vector normal to the detector plane and the propegation vector
-    double c1; double c2;
+    vec c1; vec c2;
 
 
-    c1 = np.array([x1,y1,z1]);   // an array containing the first x,y,z points of the propegation vector
+    c1 = ([x1,y1,z1]);   // an array containing the first x,y,z points of the propegation vector
     c2 = np.array([x2,y2,z2]);   // an array containing the second x,y,z points of the propegation vector
     u = np.array([0,0,1]);   // create a unit vector normal to the plane of the detector at the origin
     v = c2-c1;   // convert the propegation vector to a unit vector
-    angle = atan2(LA.norm(np.cross(u,v)),np.dot(u,v))  // calculate the angle between the propegation and the vector normal to the detector plane
-    return angle
-
+    angle = atan2(LA.norm(np.cross(u,v)),np.dot(u,v)); // calculate the angle between the propegation and the vector normal to the detector plane
+    return angle;
+}
 
 
 // double gammaCalc(double muz1, double muz2, double theta, double phi){
