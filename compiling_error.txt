@@ -1,87 +1,72 @@
-/Users/Brian/Documents/C++/LidarMCplusplus/LidarMC++.cpp:59:30: error: expected '}'
-              165,170,175,180])
-                             ^
-/Users/Brian/Documents/C++/LidarMCplusplus/LidarMC++.cpp:56:25: note: to match this '{'
-double thetaArray[55] = {0.1,0.12589,0.15849,0.19953,0.25119,0.31623,0.39811,0.50119,0.63096,0.79433,1.0,1.2589,
-                        ^
-/Users/Brian/Documents/C++/LidarMCplusplus/LidarMC++.cpp:78:1: error: use of undeclared identifier 'nPhotons'
-nPhotons = 1000000 // number of photons to trace // ~10 min
-^
-/Users/Brian/Documents/C++/LidarMCplusplus/LidarMC++.cpp:122:21: warning: using the result of an assignment as a condition without parentheses [-Wparentheses]
+/Users/Brian/Documents/C++/LidarMCplusplus/LidarMC++.cpp:78:3: error: use of undeclared identifier 'nPhotons'
+  nPhotons = 1000000; // number of photons to trace // ~10 min
+  ^
+/Users/Brian/Documents/C++/LidarMCplusplus/LidarMC++.cpp:98:21: warning: using the result of an assignment as a condition without parentheses [-Wparentheses]
   for (int i = 0; i = nPhotons ; i++){      // loop through each individual photon
                     ^
-/Users/Brian/Documents/C++/LidarMCplusplus/LidarMC++.cpp:122:21: note: place parentheses around the assignment to silence this warning
+/Users/Brian/Documents/C++/LidarMCplusplus/LidarMC++.cpp:98:21: note: place parentheses around the assignment to silence this warning
   for (int i = 0; i = nPhotons ; i++){      // loop through each individual photon
                     ^
                   (
-/Users/Brian/Documents/C++/LidarMCplusplus/LidarMC++.cpp:122:21: note: use '==' to turn this assignment into an equality comparison
+/Users/Brian/Documents/C++/LidarMCplusplus/LidarMC++.cpp:98:21: note: use '==' to turn this assignment into an equality comparison
   for (int i = 0; i = nPhotons ; i++){      // loop through each individual photon
                     ^
                     ==
-/Users/Brian/Documents/C++/LidarMCplusplus/LidarMC++.cpp:122:23: error: use of undeclared identifier 'nPhotons'
+/Users/Brian/Documents/C++/LidarMCplusplus/LidarMC++.cpp:98:23: error: use of undeclared identifier 'nPhotons'
   for (int i = 0; i = nPhotons ; i++){      // loop through each individual photon
                       ^
-/Users/Brian/Documents/C++/LidarMCplusplus/LidarMC++.cpp:128:39: error: expected unqualified-id
+/Users/Brian/Documents/C++/LidarMCplusplus/LidarMC++.cpp:104:39: error: expected unqualified-id
     double mux1 = 0; double muy1 = 0, double muz1 = 1; // initialize new direction cosine variables
                                       ^
-/Users/Brian/Documents/C++/LidarMCplusplus/LidarMC++.cpp:128:38: error: expected ';' at end of declaration
+/Users/Brian/Documents/C++/LidarMCplusplus/LidarMC++.cpp:104:38: error: expected ';' at end of declaration
     double mux1 = 0; double muy1 = 0, double muz1 = 1; // initialize new direction cosine variables
                                      ^
                                      ;
-/Users/Brian/Documents/C++/LidarMCplusplus/LidarMC++.cpp:129:39: error: expected unqualified-id
+/Users/Brian/Documents/C++/LidarMCplusplus/LidarMC++.cpp:105:39: error: expected unqualified-id
     double mux2 = 0; double muy2 = 0, double muz2 = 1; // initialize new direction cosine calculation variables
                                       ^
-/Users/Brian/Documents/C++/LidarMCplusplus/LidarMC++.cpp:129:38: error: expected ';' at end of declaration
+/Users/Brian/Documents/C++/LidarMCplusplus/LidarMC++.cpp:105:38: error: expected ';' at end of declaration
     double mux2 = 0; double muy2 = 0, double muz2 = 1; // initialize new direction cosine calculation variables
                                      ^
                                      ;
-/Users/Brian/Documents/C++/LidarMCplusplus/LidarMC++.cpp:150:11: error: use of undeclared identifier 'xT'
-          xT = x1 + fd * (x2 - x1); // calculate x-location that photon hits plane
-          ^
-/Users/Brian/Documents/C++/LidarMCplusplus/LidarMC++.cpp:151:11: error: use of undeclared identifier 'yT'
-          yT = x1 + fd * (y2 - y1); // calculate y-location that photon hits plane
-          ^
-/Users/Brian/Documents/C++/LidarMCplusplus/LidarMC++.cpp:152:11: error: use of undeclared identifier 'hitRad'
-          hitRad = sqrt((xT-xd) * (xT-xd) + (yT-yd) * (yT-yd)) // distance from detector center
-          ^
-/Users/Brian/Documents/C++/LidarMCplusplus/LidarMC++.cpp:152:26: error: use of undeclared identifier 'xT'
-          hitRad = sqrt((xT-xd) * (xT-xd) + (yT-yd) * (yT-yd)) // distance from detector center
-                         ^
-/Users/Brian/Documents/C++/LidarMCplusplus/LidarMC++.cpp:152:36: error: use of undeclared identifier 'xT'
-          hitRad = sqrt((xT-xd) * (xT-xd) + (yT-yd) * (yT-yd)) // distance from detector center
-                                   ^
-/Users/Brian/Documents/C++/LidarMCplusplus/LidarMC++.cpp:152:46: error: use of undeclared identifier 'yT'
-          hitRad = sqrt((xT-xd) * (xT-xd) + (yT-yd) * (yT-yd)) // distance from detector center
-                                             ^
-/Users/Brian/Documents/C++/LidarMCplusplus/LidarMC++.cpp:152:56: error: use of undeclared identifier 'yT'
-          hitRad = sqrt((xT-xd) * (xT-xd) + (yT-yd) * (yT-yd)) // distance from detector center
-                                                       ^
-/Users/Brian/Documents/C++/LidarMCplusplus/LidarMC++.cpp:169:1: error: expected unqualified-id
-return 0;
-^
-/Users/Brian/Documents/C++/LidarMCplusplus/LidarMC++.cpp:170:1: error: extraneous closing brace ('}')
-}
-^
-/Users/Brian/Documents/C++/LidarMCplusplus/LidarMC++.cpp:176:29: error: use of undeclared identifier 'pi'
-    double xdeg = xrad*(180/pi);
+/Users/Brian/Documents/C++/LidarMCplusplus/LidarMC++.cpp:128:9: error: use of undeclared identifier 'xT'
+        xT = x1 + fd * (x2 - x1); // calculate x-location that photon hits plane
+        ^
+/Users/Brian/Documents/C++/LidarMCplusplus/LidarMC++.cpp:129:9: error: use of undeclared identifier 'yT'
+        yT = x1 + fd * (y2 - y1); // calculate y-location that photon hits plane
+        ^
+/Users/Brian/Documents/C++/LidarMCplusplus/LidarMC++.cpp:130:9: error: use of undeclared identifier 'hitRad'
+        hitRad = sqrt((xT-xd) * (xT-xd) + (yT-yd) * (yT-yd)) // distance from detector center
+        ^
+/Users/Brian/Documents/C++/LidarMCplusplus/LidarMC++.cpp:130:24: error: use of undeclared identifier 'xT'
+        hitRad = sqrt((xT-xd) * (xT-xd) + (yT-yd) * (yT-yd)) // distance from detector center
+                       ^
+/Users/Brian/Documents/C++/LidarMCplusplus/LidarMC++.cpp:130:34: error: use of undeclared identifier 'xT'
+        hitRad = sqrt((xT-xd) * (xT-xd) + (yT-yd) * (yT-yd)) // distance from detector center
+                                 ^
+/Users/Brian/Documents/C++/LidarMCplusplus/LidarMC++.cpp:130:44: error: use of undeclared identifier 'yT'
+        hitRad = sqrt((xT-xd) * (xT-xd) + (yT-yd) * (yT-yd)) // distance from detector center
+                                           ^
+/Users/Brian/Documents/C++/LidarMCplusplus/LidarMC++.cpp:130:54: error: use of undeclared identifier 'yT'
+        hitRad = sqrt((xT-xd) * (xT-xd) + (yT-yd) * (yT-yd)) // distance from detector center
+                                                     ^
+/Users/Brian/Documents/C++/LidarMCplusplus/LidarMC++.cpp:156:29: error: function definition is not allowed here
+double rad2Deg(double xrad) {
                             ^
-/Users/Brian/Documents/C++/LidarMCplusplus/LidarMC++.cpp:183:26: error: use of undeclared identifier 'pi'
-    double xrad = xdeg *(pi/180);
-                         ^
-/Users/Brian/Documents/C++/LidarMCplusplus/LidarMC++.cpp:202:9: warning: taking the absolute value of unsigned type 'bool' has no effect [-Wabsolute-value]
-    if (abs(muz > 0.99)){
-        ^
-/Users/Brian/Documents/C++/LidarMCplusplus/LidarMC++.cpp:202:9: note: remove the call to 'abs' since unsigned values cannot be negative
-    if (abs(muz > 0.99)){
-        ^~~
-/Users/Brian/Documents/C++/LidarMCplusplus/LidarMC++.cpp:214:9: warning: taking the absolute value of unsigned type 'bool' has no effect [-Wabsolute-value]
-    if (abs(muz > 0.99)){
-        ^
-/Users/Brian/Documents/C++/LidarMCplusplus/LidarMC++.cpp:214:9: note: remove the call to 'abs' since unsigned values cannot be negative
-    if (abs(muz > 0.99)){
-        ^~~
-/Users/Brian/Documents/C++/LidarMCplusplus/LidarMC++.cpp:230:11: error: expected expression
-    c1 = ([x1,y1,z1]);   // an array containing the first x,y,z points of the propegation vector
-          ^
+/Users/Brian/Documents/C++/LidarMCplusplus/LidarMC++.cpp:163:29: error: function definition is not allowed here
+double deg2Rad(double xdeg) {
+                            ^
+/Users/Brian/Documents/C++/LidarMCplusplus/LidarMC++.cpp:169:84: error: function definition is not allowed here
+double updateDirCosX(double theta, double phi, double mux, double muy, double muz) {
+                                                                                   ^
+/Users/Brian/Documents/C++/LidarMCplusplus/LidarMC++.cpp:181:84: error: function definition is not allowed here
+double updateDirCosY(double theta, double phi, double mux, double muy, double muz) {
+                                                                                   ^
+/Users/Brian/Documents/C++/LidarMCplusplus/LidarMC++.cpp:193:84: error: function definition is not allowed here
+double updateDirCosZ(double theta, double phi, double mux, double muy, double muz) {
+                                                                                   ^
+/Users/Brian/Documents/C++/LidarMCplusplus/LidarMC++.cpp:204:86: error: function definition is not allowed here
+double intersectionAngle(double x1,double y1,double z1,double x2,double y2,double z2){
+                                                                                     ^
 fatal error: too many errors emitted, stopping now [-ferror-limit=]
-3 warnings and 20 errors generated.
+1 warning and 20 errors generated.

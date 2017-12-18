@@ -27,38 +27,38 @@ double randArray(int); // create an array of random numbers from
 // main function
 int main (){
 
-//////////////////////////// define constants //////////////////////////////////
+  //////////////////////////// define constants //////////////////////////////////
 
-double pi = 3.1415926535897932384626433832795028841971693993751058209749445923078164062;
+  double pi = 3.1415926535897932384626433832795028841971693993751058209749445923078164062;
 
 
-////// Define Lidar Parameters//////
+  ////// Define Lidar Parameters//////
 
-// Detector Size and FOV
-double detectorRad = 1.5e-1; // number of photons to trace
-double detectorDiam = detectorRad * 2; // detector diameter (m)
-double detectorArea = pi * detectorRad * detectorRad;
-double scatLimit = 4; // number of scattering events to trace
-double FOV = deg2Rad(20); // half-angle FOV; enter in degrees -> converts to rad
+  // Detector Size and FOV
+  double detectorRad = 1.5e-1; // number of photons to trace
+  double detectorDiam = detectorRad * 2; // detector diameter (m)
+  double detectorArea = pi * detectorRad * detectorRad;
+  double scatLimit = 4; // number of scattering events to trace
+  double FOV = deg2Rad(20); // half-angle FOV; enter in degrees -> converts to rad
 
-// detector position
-double xd = 0.04; double yd = 0; double zd = 0; // position of the detector in (m)
-double fd; // variable used in detector photon geometry colculations
-double anglei; // angle of intersection between photon and detector plane
+  // detector position
+  double xd = 0.04; double yd = 0; double zd = 0; // position of the detector in (m)
+  double fd; // variable used in detector photon geometry colculations
+  double anglei; // angle of intersection between photon and detector plane
 
-// Define water column IOPs
-double a = 0.08; //absorption coefficient (m^-^1)
-double b = 0.01; //scattering coefficient (m^-^1)
-double c = a+b; //bema attenuation coefficient (m^-^1)
-double omega = b/c; // single scattering albedo
+  // Define water column IOPs
+  double a = 0.08; //absorption coefficient (m^-^1)
+  double b = 0.01; //scattering coefficient (m^-^1)
+  double c = a+b; //bema attenuation coefficient (m^-^1)
+  double omega = b/c; // single scattering albedo
 
-//
-double thetaArray[55] = {0.1,0.12589,0.15849,0.19953,0.25119,0.31623,0.39811,0.50119,0.63096,0.79433,1.0,1.2589,
+  /////////////////// VSF Probability ///////////////////
+  double thetaArray[55] = {0.1,0.12589,0.15849,0.19953,0.25119,0.31623,0.39811,0.50119,0.63096,0.79433,1.0,1.2589,
               1.5849,1.9953,2.5119,3.1623,3.9811,5.0119,6.3096,7.9433,10,15,20,25,30,35,40,45,50,
               55,60,65,70,75,80,85,90,95,100,105,110,115,120,125,130,135,140,145,150,155,160,
-              165,170,175,180])
+              165,170,175,180};
 
-double pTheta[55] = {0.043292475, 0.051470904, 0.061194794, 0.07278701,  0.086643078,
+  double pTheta[55] = {0.043292475, 0.051470904, 0.061194794, 0.07278701,  0.086643078,
                    0.103058065, 0.122316295, 0.144714728, 0.170373413, 0.199273394,
                    0.23138308,  0.266595059, 0.304726101, 0.345302331, 0.387470778,
                    0.431035572, 0.475832438, 0.5216971,   0.568433689, 0.615808429,
@@ -70,54 +70,30 @@ double pTheta[55] = {0.043292475, 0.051470904, 0.061194794, 0.07278701,  0.08664
                    0.99481898 , 0.995893094, 0.996524926, 0.997472673, 0.997978139,
                    0.998736337, 0.999052252, 0.999620901, 0.999747267, 1.0};
 
-// Mont Carlo parameters
-//nPhotons = 1000 // number of photons to trace // < 1 second
-//nPhotons = 10000 // number of photons to trace // ~ 1.5 seconds
-//Photons = 100000 // number of photons to trace // ~10 seconds
-//nPhotons = 1000000 // number of photons to trace // ~1.5 min
-nPhotons = 1000000 // number of photons to trace // ~10 min
+  // Mont Carlo parameters
+  //nPhotons = 1000 // number of photons to trace // < 1 second
+  //nPhotons = 10000 // number of photons to trace // ~ 1.5 seconds
+  //Photons = 100000 // number of photons to trace // ~10 seconds
+  //nPhotons = 1000000 // number of photons to trace // ~1.5 min
+  double nPhotons = 1000000; // number of photons to trace // ~10 min
 
-// define the number of dpeht bins to aggregate photons into
-//double depthBin [(int)((maxDepth-minDepth)/dDepth)+1] = {0};
+  // define the number of dpeht bins to aggregate photons into
+  //double depthBin [(int)((maxDepth-minDepth)/dDepth)+1] = {0};
 
-// create depth bin variable with depth bin values
-//for ( int i = 0; i<((sizeof(depthBin)/sizeof(depthBin[0])+1)); i++){
-//    depthBin [i] = {(double) (i*0.25)+0.25};
-//}
+  // create depth bin variable with depth bin values
+  //for ( int i = 0; i<((sizeof(depthBin)/sizeof(depthBin[0])+1)); i++){
+  //    depthBin [i] = {(double) (i*0.25)+0.25};
+  //}
 
-//int nBin = sizeof(depthBin)/sizeof(depthBin[0]); // size of bin array
+  //int nBin = sizeof(depthBin)/sizeof(depthBin[0]); // size of bin array
 
-//double Signal[nBin] = {0};
-
-
-/////////////////// VSF Probability /////////////////////
-
-double psi[55] = {0.1, 0.12589, 0.15849, 0.19953, 0.25119, 0.31623,
-                  0.39811, 0.50119, 0.63096, 0.79433, 1.0, 1.2589, 1.5849,
-                   1.9953, 2.5119, 3.1623, 3.9811, 5.0119, 6.3096, 7.9433,
-                  10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90,
-                  95, 100, 105, 110, 115, 120, 125, 130, 135, 140, 145, 150, 155,
-                  160, 165, 170, 175, 180};
-double pPsi[55] = {0.043292475, 0.051470904, 0.061194794, 0.07278701,  0.086643078,
-                   0.103058065, 0.122316295, 0.144714728, 0.170373413, 0.199273394,
-                   0.23138308,  0.266595059, 0.304726101, 0.345302331, 0.387470778,
-                   0.431035572, 0.475832438, 0.5216971,   0.568433689, 0.615808429,
-                   0.663612814, 0.749541922, 0.806027674, 0.847981298, 0.877235105,
-                   0.898464649, 0.915776837, 0.929298035, 0.940418273, 0.949074367,
-                   0.956340431, 0.962153282, 0.967271119, 0.971314842, 0.975042649,
-                   0.978012258, 0.9808555,   0.983003728, 0.985215139, 0.986857901,
-                   0.988690213, 0.990017059, 0.991533455, 0.992607569, 0.993934416,
-                   0.99481898 , 0.995893094, 0.996524926, 0.997472673, 0.997978139,
-                   0.998736337, 0.999052252, 0.999620901, 0.999747267, 1.0};
-
-//////////////////////////////////////////////////////////////////////////////////////
+  //double Signal[nBin] = {0};
 
 
+  // Predefined Working Variables
 
-// Predefined Working Variables
 
-
-// Main Code
+  // Main Code
 
   for (int i = 0; i = nPhotons ; i++){      // loop through each individual photon
 
@@ -134,33 +110,38 @@ double pPsi[55] = {0.043292475, 0.051470904, 0.061194794, 0.07278701,  0.0866430
     double rTotal = 0; // total pathlength variable
     double weight = 1; // current weight of photon (omega^nscat)
     int nScat = 0; // number of scattering events so far
-      while (status == 1 && nScat < 10) {   // while the photon is still alive.....
-        // Move Photon
-        double r = -1 * log(rand())/c; // generate a random propegation distance
-        x2 = x1 + mux1 * r; // update the photon's new x position
-        y2 = x1 + muy1 * r; // update the photon's new y position
-        z2 = x1 + muz1 * r; // update the photon's new z position
 
-        // Update Pathlength Storage Variable
-        rTotal = rTotal + r;
+    while (status == 1 && nScat < 10) {   // while the photon is still alive.....
 
-        // Did the photon cross the plane of the detector?
-        if (z2 < zd){
-          fd = (zd - z1) / (z2 - z1); // calculate the multiplicative factor for the distance along the photon trajectory to the detector
-          xT = x1 + fd * (x2 - x1); // calculate x-location that photon hits plane
-          yT = x1 + fd * (y2 - y1); // calculate y-location that photon hits plane
-          hitRad = sqrt((xT-xd) * (xT-xd) + (yT-yd) * (yT-yd)) // distance from detector center
+      // Move Photon
+      double r = -1 * log(rand())/c; // generate a random propegation distance
+      x2 = x1 + mux1 * r; // update the photon's new x position
+      y2 = x1 + muy1 * r; // update the photon's new y position
+      z2 = x1 + muz1 * r; // update the photon's new z position
 
-          if (hitRad > detectorRad){
-            status = 0;
-            }
-            else{
-              anglei = pi - intersectionAngle(x1,y1,z1,x2,y2,z2); // calculate the angle betweenthe
-            }
-          }
+      // Update Pathlength Storage Variable
+      rTotal = rTotal + r;
+
+      // Did the photon cross the plane of the detector?
+      if (z2 < zd){
+        fd = (zd - z1) / (z2 - z1); // calculate the multiplicative factor for the distance along the photon trajectory to the detector
+        xT = x1 + fd * (x2 - x1); // calculate x-location that photon hits plane
+        yT = x1 + fd * (y2 - y1); // calculate y-location that photon hits plane
+        hitRad = sqrt((xT-xd) * (xT-xd) + (yT-yd) * (yT-yd)); // distance from detector center
+
+        // Did the photon hit the detector?
+        if (hitRad > detectorRad){
+          status = 0;
         }
-      }
-}
+        else{
+          anglei = pi - intersectionAngle(x1,y1,z1,x2,y2,z2); // calculate the angle betweenthe
+
+          //if(anglei <= FOV){
+            //rTotal = rTotal - (r-(fd*r)) # calculate the distance
+            //signal(omega**nScat) # count photon in the signal
+            //distance.append(rTotal) # record the total pathlength traveled by the photon
+
+          }
 
 
 
@@ -224,15 +205,13 @@ double intersectionAngle(double x1,double y1,double z1,double x2,double y2,doubl
 // intersectionAngle(c1,c2) - Calculates the intersection angle between a photon trajectory and the plane made by the lidar detector
 // In order to determine if a photon has entered the detector within the FOV of the detector, this function calculates the
 // angle between the unit vector normal to the detector plane and the propegation vector
-    vec c1; vec c2;
-
-
-    c1 = ([x1,y1,z1]);   // an array containing the first x,y,z points of the propegation vector
-    c2 = np.array([x2,y2,z2]);   // an array containing the second x,y,z points of the propegation vector
-    u = np.array([0,0,1]);   // create a unit vector normal to the plane of the detector at the origin
-    v = c2-c1;   // convert the propegation vector to a unit vector
-    angle = atan2(LA.norm(np.cross(u,v)),np.dot(u,v)); // calculate the angle between the propegation and the vector normal to the detector plane
-    return angle;
+  vec c1; vec c2;
+  c1 = ([x1,y1,z1]);   // an array containing the first x,y,z points of the propegation vector
+  c2 = np.array([x2,y2,z2]);   // an array containing the second x,y,z points of the propegation vector
+  u = np.array([0,0,1]);   // create a unit vector normal to the plane of the detector at the origin
+  v = c2-c1;   // convert the propegation vector to a unit vector
+  angle = atan2(LA.norm(np.cross(u,v)),np.dot(u,v)); // calculate the angle between the propegation and the vector normal to the detector plane
+  return angle;
 }
 
 
