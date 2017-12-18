@@ -152,9 +152,9 @@ double pPsi[55] = {0.043292475, 0.051470904, 0.061194794, 0.07278701,  0.0866430
 
         // Did the photon cross the plane of the detector?
         if (z2 < zd){
-          fd = (zd - z1) / (z2 - z1) // calculate the multiplicative factor for the distance along the photon trajectory to the detector
-          xT = x1 + fd * (x2 - x1) // calculate x-location that photon hits plane
-          yT = x1 + fd * (y2 - y1) // calculate y-location that photon hits plane
+          fd = (zd - z1) / (z2 - z1); // calculate the multiplicative factor for the distance along the photon trajectory to the detector
+          xT = x1 + fd * (x2 - x1); // calculate x-location that photon hits plane
+          yT = x1 + fd * (y2 - y1); // calculate y-location that photon hits plane
           hitRad = sqrt((xT-xd) * (xT-xd) + (yT-yd) * (yT-yd)) // distance from detector center
 
           if (hitRad > detectorRad){
