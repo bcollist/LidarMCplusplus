@@ -24,9 +24,6 @@ double updateDirCosX(double theta, double phi, double mux, double muy, double mu
 double updateDirCosY(double theta, double phi, double mux, double muy, double muz);
 double updateDirCosZ(double theta, double phi, double mux, double muy, double muz);
 
-// Random Number Generator
-double randArray(int); // create an array of random numbers from
-
 //
 double intersectionAngle(double x1,double y1,double z1,double x2,double y2,double z2);
 
@@ -98,10 +95,12 @@ int main (){
 
 
   // Predefined Working Variables
+  mt19937::result_type seed = chrono::high_resolution_clock::now().time_since_epoch().count(); // seed the random number generator
+  auto real_rand = std::bind(std::uniform_real_distribution<double>(0,1),
+                             mt19937(seed));
 
 
   // Main Code
-
   for (int i = 0; (i = nPhotons) ; i++){      // loop through each individual photon
 
     // Photon Position and Direction Initialization

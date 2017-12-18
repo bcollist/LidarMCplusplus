@@ -1,11 +1,7 @@
-Undefined symbols for architecture x86_64:
-  "_wrapper_dasum_", referenced from:
-      double arma::op_norm::vec_norm_1_direct_std<double>(arma::Mat<double> const&) in LidarMC++-4439aa.o
-  "_wrapper_ddot_", referenced from:
-      double arma::blas::dot<double>(unsigned int, double const*, double const*) in LidarMC++-4439aa.o
-  "_wrapper_dgesdd_", referenced from:
-      void arma::lapack::gesdd<double>(char*, int*, int*, double*, int*, double*, double*, int*, double*, int*, double*, int*, int*, int*) in LidarMC++-4439aa.o
-  "_wrapper_dnrm2_", referenced from:
-      double arma::op_norm::vec_norm_2_direct_std<double>(arma::Mat<double> const&) in LidarMC++-4439aa.o
-ld: symbol(s) not found for architecture x86_64
-clang: error: linker command failed with exit code 1 (use -v to see invocation)
+/Users/Brian/Documents/C++/LidarMCplusplus/LidarMC++.cpp:99:3: warning: 'auto' type specifier is a C++11 extension [-Wc++11-extensions]
+  auto real_rand = std::bind(std::uniform_real_distribution<double>(0,1),
+  ^
+/Users/Brian/Documents/C++/LidarMCplusplus/LidarMC++.cpp:99:25: error: no member named 'bind' in namespace 'std'
+  auto real_rand = std::bind(std::uniform_real_distribution<double>(0,1),
+                   ~~~~~^
+1 warning and 1 error generated.
