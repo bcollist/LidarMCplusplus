@@ -1,72 +1,149 @@
-/Users/Brian/Documents/C++/LidarMCplusplus/LidarMC++.cpp:78:3: error: use of undeclared identifier 'nPhotons'
-  nPhotons = 1000000; // number of photons to trace // ~10 min
-  ^
-/Users/Brian/Documents/C++/LidarMCplusplus/LidarMC++.cpp:98:21: warning: using the result of an assignment as a condition without parentheses [-Wparentheses]
-  for (int i = 0; i = nPhotons ; i++){      // loop through each individual photon
-                    ^
-/Users/Brian/Documents/C++/LidarMCplusplus/LidarMC++.cpp:98:21: note: place parentheses around the assignment to silence this warning
-  for (int i = 0; i = nPhotons ; i++){      // loop through each individual photon
-                    ^
-                  (
-/Users/Brian/Documents/C++/LidarMCplusplus/LidarMC++.cpp:98:21: note: use '==' to turn this assignment into an equality comparison
-  for (int i = 0; i = nPhotons ; i++){      // loop through each individual photon
-                    ^
-                    ==
-/Users/Brian/Documents/C++/LidarMCplusplus/LidarMC++.cpp:98:23: error: use of undeclared identifier 'nPhotons'
-  for (int i = 0; i = nPhotons ; i++){      // loop through each individual photon
-                      ^
-/Users/Brian/Documents/C++/LidarMCplusplus/LidarMC++.cpp:104:39: error: expected unqualified-id
-    double mux1 = 0; double muy1 = 0, double muz1 = 1; // initialize new direction cosine variables
+/Users/Brian/Documents/C++/LidarMCplusplus/LidarMC++.cpp:219:8: error: no matching constructor for initialization of 'vec' (aka 'Col<double>')
+  c1 = vec(x1,y1,z1);   // an array containing the first x,y,z points of the propegation vector
+       ^   ~~~~~~~~
+/usr/local/include/armadillo_bits/Col_bones.hpp:69:10: note: candidate constructor not viable: no known conversion from 'double' to 'double *' for 1st argument; take the address of the argument with &
+  inline Col(      eT* aux_mem, const uword aux_length, const bool copy_aux_mem = true, const bool strict = false);
+         ^
+/usr/local/include/armadillo_bits/Col_bones.hpp:153:10: note: candidate constructor not viable: no known conversion from 'double' to 'const arma::arma_fixed_indicator' for 1st argument
+  inline Col(const arma_fixed_indicator&, const uword in_n_elem, const eT* in_mem);
+         ^
+/usr/local/include/armadillo_bits/Col_bones.hpp:40:39: note: candidate template ignored: could not match 'fill_class<type-parameter-0-0>' against 'double'
+  template<typename fill_type> inline Col(const uword in_rows, const uword in_cols, const fill::fill_class<fill_type>& f);
                                       ^
-/Users/Brian/Documents/C++/LidarMCplusplus/LidarMC++.cpp:104:38: error: expected ';' at end of declaration
-    double mux1 = 0; double muy1 = 0, double muz1 = 1; // initialize new direction cosine variables
-                                     ^
-                                     ;
-/Users/Brian/Documents/C++/LidarMCplusplus/LidarMC++.cpp:105:39: error: expected unqualified-id
-    double mux2 = 0; double muy2 = 0, double muz2 = 1; // initialize new direction cosine calculation variables
+/usr/local/include/armadillo_bits/Col_bones.hpp:39:39: note: candidate constructor template not viable: requires 2 arguments, but 3 were provided
+  template<typename fill_type> inline Col(const uword n_elem,                       const fill::fill_class<fill_type>& f);
                                       ^
-/Users/Brian/Documents/C++/LidarMCplusplus/LidarMC++.cpp:105:38: error: expected ';' at end of declaration
-    double mux2 = 0; double muy2 = 0, double muz2 = 1; // initialize new direction cosine calculation variables
-                                     ^
-                                     ;
-/Users/Brian/Documents/C++/LidarMCplusplus/LidarMC++.cpp:128:9: error: use of undeclared identifier 'xT'
-        xT = x1 + fd * (x2 - x1); // calculate x-location that photon hits plane
-        ^
-/Users/Brian/Documents/C++/LidarMCplusplus/LidarMC++.cpp:129:9: error: use of undeclared identifier 'yT'
-        yT = x1 + fd * (y2 - y1); // calculate y-location that photon hits plane
-        ^
-/Users/Brian/Documents/C++/LidarMCplusplus/LidarMC++.cpp:130:9: error: use of undeclared identifier 'hitRad'
-        hitRad = sqrt((xT-xd) * (xT-xd) + (yT-yd) * (yT-yd)) // distance from detector center
-        ^
-/Users/Brian/Documents/C++/LidarMCplusplus/LidarMC++.cpp:130:24: error: use of undeclared identifier 'xT'
-        hitRad = sqrt((xT-xd) * (xT-xd) + (yT-yd) * (yT-yd)) // distance from detector center
-                       ^
-/Users/Brian/Documents/C++/LidarMCplusplus/LidarMC++.cpp:130:34: error: use of undeclared identifier 'xT'
-        hitRad = sqrt((xT-xd) * (xT-xd) + (yT-yd) * (yT-yd)) // distance from detector center
-                                 ^
-/Users/Brian/Documents/C++/LidarMCplusplus/LidarMC++.cpp:130:44: error: use of undeclared identifier 'yT'
-        hitRad = sqrt((xT-xd) * (xT-xd) + (yT-yd) * (yT-yd)) // distance from detector center
+/usr/local/include/armadillo_bits/Col_bones.hpp:41:39: note: candidate constructor template not viable: requires 2 arguments, but 3 were provided
+  template<typename fill_type> inline Col(const SizeMat& s,                         const fill::fill_class<fill_type>& f);
+                                      ^
+/usr/local/include/armadillo_bits/Col_bones.hpp:63:44: note: candidate constructor template not viable: requires single argument 'X', but 3 arguments were provided
+  template<typename T1> inline             Col(const Base<eT,T1>& X);
                                            ^
-/Users/Brian/Documents/C++/LidarMCplusplus/LidarMC++.cpp:130:54: error: use of undeclared identifier 'yT'
-        hitRad = sqrt((xT-xd) * (xT-xd) + (yT-yd) * (yT-yd)) // distance from detector center
-                                                     ^
-/Users/Brian/Documents/C++/LidarMCplusplus/LidarMC++.cpp:156:29: error: function definition is not allowed here
-double rad2Deg(double xrad) {
-                            ^
-/Users/Brian/Documents/C++/LidarMCplusplus/LidarMC++.cpp:163:29: error: function definition is not allowed here
-double deg2Rad(double xdeg) {
-                            ^
-/Users/Brian/Documents/C++/LidarMCplusplus/LidarMC++.cpp:169:84: error: function definition is not allowed here
-double updateDirCosX(double theta, double phi, double mux, double muy, double muz) {
-                                                                                   ^
-/Users/Brian/Documents/C++/LidarMCplusplus/LidarMC++.cpp:181:84: error: function definition is not allowed here
-double updateDirCosY(double theta, double phi, double mux, double muy, double muz) {
-                                                                                   ^
-/Users/Brian/Documents/C++/LidarMCplusplus/LidarMC++.cpp:193:84: error: function definition is not allowed here
-double updateDirCosZ(double theta, double phi, double mux, double muy, double muz) {
-                                                                                   ^
-/Users/Brian/Documents/C++/LidarMCplusplus/LidarMC++.cpp:204:86: error: function definition is not allowed here
-double intersectionAngle(double x1,double y1,double z1,double x2,double y2,double z2){
-                                                                                     ^
-fatal error: too many errors emitted, stopping now [-ferror-limit=]
-1 warning and 20 errors generated.
+/usr/local/include/armadillo_bits/Col_bones.hpp:66:44: note: candidate constructor template not viable: requires single argument 'X', but 3 arguments were provided
+  template<typename T1> inline explicit    Col(const SpBase<eT,T1>& X);
+                                           ^
+/usr/local/include/armadillo_bits/Col_bones.hpp:73:19: note: candidate constructor template not viable: requires 2 arguments, but 3 were provided
+  inline explicit Col(const Base<pod_type,T1>& A, const Base<pod_type,T2>& B);
+                  ^
+/usr/local/include/armadillo_bits/Col_bones.hpp:75:43: note: candidate constructor template not viable: requires single argument 'X', but 3 arguments were provided
+  template<typename T1> inline            Col(const BaseCube<eT,T1>& X);
+                                          ^
+/usr/local/include/armadillo_bits/Col_bones.hpp:36:19: note: candidate constructor not viable: requires 2 arguments, but 3 were provided
+  inline explicit Col(const uword in_rows, const uword in_cols);
+                  ^
+/usr/local/include/armadillo_bits/Col_bones.hpp:70:10: note: candidate constructor not viable: requires 2 arguments, but 3 were provided
+  inline Col(const eT* aux_mem, const uword aux_length);
+         ^
+/usr/local/include/armadillo_bits/Col_bones.hpp:34:19: note: candidate constructor not viable: requires single argument 'X', but 3 arguments were provided
+  inline          Col(const Col<eT>& X);
+                  ^
+/usr/local/include/armadillo_bits/Col_bones.hpp:35:19: note: candidate constructor not viable: requires single argument 'n_elem', but 3 arguments were provided
+  inline explicit Col(const uword n_elem);
+                  ^
+/usr/local/include/armadillo_bits/Col_bones.hpp:37:19: note: candidate constructor not viable: requires single argument 's', but 3 arguments were provided
+  inline explicit Col(const SizeMat& s);
+                  ^
+/usr/local/include/armadillo_bits/Col_bones.hpp:43:21: note: candidate constructor not viable: requires single argument 'text', but 3 arguments were provided
+  inline            Col(const char*        text);
+                    ^
+/usr/local/include/armadillo_bits/Col_bones.hpp:46:21: note: candidate constructor not viable: requires single argument 'text', but 3 arguments were provided
+  inline            Col(const std::string& text);
+                    ^
+/usr/local/include/armadillo_bits/Col_bones.hpp:49:21: note: candidate constructor not viable: requires single argument 'x', but 3 arguments were provided
+  inline            Col(const std::vector<eT>& x);
+                    ^
+/usr/local/include/armadillo_bits/Col_bones.hpp:78:21: note: candidate constructor not viable: requires single argument 'X', but 3 arguments were provided
+  inline            Col(const subview_cube<eT>& X);
+                    ^
+/usr/local/include/armadillo_bits/Col_bones.hpp:33:19: note: candidate constructor not viable: requires 0 arguments, but 3 were provided
+  inline          Col();
+                  ^
+/Users/Brian/Documents/C++/LidarMCplusplus/LidarMC++.cpp:220:8: error: no matching constructor for initialization of 'vec' (aka 'Col<double>')
+  c2 = vec(x2,y2,z2);   // an array containing the second x,y,z points of the propegation vector
+       ^   ~~~~~~~~
+/usr/local/include/armadillo_bits/Col_bones.hpp:69:10: note: candidate constructor not viable: no known conversion from 'double' to 'double *' for 1st argument; take the address of the argument with &
+  inline Col(      eT* aux_mem, const uword aux_length, const bool copy_aux_mem = true, const bool strict = false);
+         ^
+/usr/local/include/armadillo_bits/Col_bones.hpp:153:10: note: candidate constructor not viable: no known conversion from 'double' to 'const arma::arma_fixed_indicator' for 1st argument
+  inline Col(const arma_fixed_indicator&, const uword in_n_elem, const eT* in_mem);
+         ^
+/usr/local/include/armadillo_bits/Col_bones.hpp:40:39: note: candidate template ignored: could not match 'fill_class<type-parameter-0-0>' against 'double'
+  template<typename fill_type> inline Col(const uword in_rows, const uword in_cols, const fill::fill_class<fill_type>& f);
+                                      ^
+/usr/local/include/armadillo_bits/Col_bones.hpp:39:39: note: candidate constructor template not viable: requires 2 arguments, but 3 were provided
+  template<typename fill_type> inline Col(const uword n_elem,                       const fill::fill_class<fill_type>& f);
+                                      ^
+/usr/local/include/armadillo_bits/Col_bones.hpp:41:39: note: candidate constructor template not viable: requires 2 arguments, but 3 were provided
+  template<typename fill_type> inline Col(const SizeMat& s,                         const fill::fill_class<fill_type>& f);
+                                      ^
+/usr/local/include/armadillo_bits/Col_bones.hpp:63:44: note: candidate constructor template not viable: requires single argument 'X', but 3 arguments were provided
+  template<typename T1> inline             Col(const Base<eT,T1>& X);
+                                           ^
+/usr/local/include/armadillo_bits/Col_bones.hpp:66:44: note: candidate constructor template not viable: requires single argument 'X', but 3 arguments were provided
+  template<typename T1> inline explicit    Col(const SpBase<eT,T1>& X);
+                                           ^
+/usr/local/include/armadillo_bits/Col_bones.hpp:73:19: note: candidate constructor template not viable: requires 2 arguments, but 3 were provided
+  inline explicit Col(const Base<pod_type,T1>& A, const Base<pod_type,T2>& B);
+                  ^
+/usr/local/include/armadillo_bits/Col_bones.hpp:75:43: note: candidate constructor template not viable: requires single argument 'X', but 3 arguments were provided
+  template<typename T1> inline            Col(const BaseCube<eT,T1>& X);
+                                          ^
+/usr/local/include/armadillo_bits/Col_bones.hpp:36:19: note: candidate constructor not viable: requires 2 arguments, but 3 were provided
+  inline explicit Col(const uword in_rows, const uword in_cols);
+                  ^
+/usr/local/include/armadillo_bits/Col_bones.hpp:70:10: note: candidate constructor not viable: requires 2 arguments, but 3 were provided
+  inline Col(const eT* aux_mem, const uword aux_length);
+         ^
+/usr/local/include/armadillo_bits/Col_bones.hpp:34:19: note: candidate constructor not viable: requires single argument 'X', but 3 arguments were provided
+  inline          Col(const Col<eT>& X);
+                  ^
+/usr/local/include/armadillo_bits/Col_bones.hpp:35:19: note: candidate constructor not viable: requires single argument 'n_elem', but 3 arguments were provided
+  inline explicit Col(const uword n_elem);
+                  ^
+/usr/local/include/armadillo_bits/Col_bones.hpp:37:19: note: candidate constructor not viable: requires single argument 's', but 3 arguments were provided
+  inline explicit Col(const SizeMat& s);
+                  ^
+/usr/local/include/armadillo_bits/Col_bones.hpp:43:21: note: candidate constructor not viable: requires single argument 'text', but 3 arguments were provided
+  inline            Col(const char*        text);
+                    ^
+/usr/local/include/armadillo_bits/Col_bones.hpp:46:21: note: candidate constructor not viable: requires single argument 'text', but 3 arguments were provided
+  inline            Col(const std::string& text);
+                    ^
+/usr/local/include/armadillo_bits/Col_bones.hpp:49:21: note: candidate constructor not viable: requires single argument 'x', but 3 arguments were provided
+  inline            Col(const std::vector<eT>& x);
+                    ^
+/usr/local/include/armadillo_bits/Col_bones.hpp:78:21: note: candidate constructor not viable: requires single argument 'X', but 3 arguments were provided
+  inline            Col(const subview_cube<eT>& X);
+                    ^
+/usr/local/include/armadillo_bits/Col_bones.hpp:33:19: note: candidate constructor not viable: requires 0 arguments, but 3 were provided
+  inline          Col();
+                  ^
+/Users/Brian/Documents/C++/LidarMCplusplus/LidarMC++.cpp:221:3: error: use of undeclared identifier 'u'
+  u = vec(0,0,1);   // create a unit vector normal to the plane of the detector at the origin
+  ^
+/Users/Brian/Documents/C++/LidarMCplusplus/LidarMC++.cpp:222:3: error: use of undeclared identifier 'v'
+  v = c2 - c1;   // convert the propegation vector to a unit vector
+  ^
+/Users/Brian/Documents/C++/LidarMCplusplus/LidarMC++.cpp:223:3: error: use of undeclared identifier 'angle'
+  angle = atan2(norm(cross(u,v)),dot(u,v)); // calculate the angle between the propegation and the vector normal to the detector plane
+  ^
+/Users/Brian/Documents/C++/LidarMCplusplus/LidarMC++.cpp:223:28: error: use of undeclared identifier 'u'
+  angle = atan2(norm(cross(u,v)),dot(u,v)); // calculate the angle between the propegation and the vector normal to the detector plane
+                           ^
+/Users/Brian/Documents/C++/LidarMCplusplus/LidarMC++.cpp:223:30: error: use of undeclared identifier 'v'
+  angle = atan2(norm(cross(u,v)),dot(u,v)); // calculate the angle between the propegation and the vector normal to the detector plane
+                             ^
+/Users/Brian/Documents/C++/LidarMCplusplus/LidarMC++.cpp:223:38: error: use of undeclared identifier 'u'
+  angle = atan2(norm(cross(u,v)),dot(u,v)); // calculate the angle between the propegation and the vector normal to the detector plane
+                                     ^
+/Users/Brian/Documents/C++/LidarMCplusplus/LidarMC++.cpp:223:40: error: use of undeclared identifier 'v'
+  angle = atan2(norm(cross(u,v)),dot(u,v)); // calculate the angle between the propegation and the vector normal to the detector plane
+                                       ^
+/Users/Brian/Documents/C++/LidarMCplusplus/LidarMC++.cpp:224:10: error: use of undeclared identifier 'angle'; did you mean 'range'?
+  return angle;
+         ^~~~~
+         range
+/usr/local/include/armadillo_bits/fn_range.hpp:25:1: note: 'range' declared here
+range
+^
+10 errors generated.

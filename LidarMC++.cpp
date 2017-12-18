@@ -10,6 +10,9 @@
 using namespace std;
 using namespace arma;
 
+// Global Variables
+double pi = 3.1415926535897932384626433832795028841971693993751058209749445923078164062;
+
 /////////////////////// Function Prototypes ////////////////////////////
 
 // Trig Stuuuff
@@ -21,16 +24,16 @@ double updateDirCosX(double theta, double phi, double mux, double muy, double mu
 double updateDirCosY(double theta, double phi, double mux, double muy, double muz);
 double updateDirCosZ(double theta, double phi, double mux, double muy, double muz);
 
+// Random Number Generator
 double randArray(int); // create an array of random numbers from
 
+//
+double intersectionAngle(double x1,double y1,double z1,double x2,double y2,double z2);
 
 // main function
 int main (){
 
   //////////////////////////// define constants //////////////////////////////////
-
-  double pi = 3.1415926535897932384626433832795028841971693993751058209749445923078164062;
-
 
   ////// Define Lidar Parameters//////
 
@@ -52,7 +55,11 @@ int main (){
   double c = a+b; //bema attenuation coefficient (m^-^1)
   double omega = b/c; // single scattering albedo
 
-  /////////////////// VSF Probability ///////////////////
+  // Photon Position Definitions
+  double xT; double yT; // variable used to describe the x and y location where a photon intersects the detector plane
+  double hitRad; // radial distance away from detector center that photon crosses detector plane
+
+  // VSF Probability
   double thetaArray[55] = {0.1,0.12589,0.15849,0.19953,0.25119,0.31623,0.39811,0.50119,0.63096,0.79433,1.0,1.2589,
               1.5849,1.9953,2.5119,3.1623,3.9811,5.0119,6.3096,7.9433,10,15,20,25,30,35,40,45,50,
               55,60,65,70,75,80,85,90,95,100,105,110,115,120,125,130,135,140,145,150,155,160,
@@ -95,14 +102,14 @@ int main (){
 
   // Main Code
 
-  for (int i = 0; i = nPhotons ; i++){      // loop through each individual photon
+  for (int i = 0; (i = nPhotons) ; i++){      // loop through each individual photon
 
     // Photon Position and Direction Initialization
     double x1 = 0; double y1 = 0; double z1 = 0; // initialize photon position 1
     double x2 = 0; double y2 = 0; double z2 = 0; // initialize calculation positions for photons
 
-    double mux1 = 0; double muy1 = 0, double muz1 = 1; // initialize new direction cosine variables
-    double mux2 = 0; double muy2 = 0, double muz2 = 1; // initialize new direction cosine calculation variables
+    double mux1 = 0; double muy1 = 0; double muz1 = 1; // initialize new direction cosine variables
+    double mux2 = 0; double muy2 = 0; double muz2 = 1; // initialize new direction cosine calculation variables
 
 
     // Photon Status variable
@@ -141,14 +148,17 @@ int main (){
             //signal(omega**nScat) # count photon in the signal
             //distance.append(rTotal) # record the total pathlength traveled by the photon
 
-          }
-
-
-
-
-
-return 0;
+        }
+      }
+    }
+  }
+  return 0;
 }
+
+
+
+
+
 
 ////////// Function Definitions ////////////
 
@@ -180,7 +190,7 @@ double updateDirCosX(double theta, double phi, double mux, double muy, double mu
 // Update Y Direction Cosine
 double updateDirCosY(double theta, double phi, double mux, double muy, double muz) {
   double muyPrime;
-    if (abs(muz > 0.99)){
+    if (abs(muz) > 0.99){
       muyPrime = sin(theta) * sin(phi);
     }
         else{
@@ -192,7 +202,7 @@ double updateDirCosY(double theta, double phi, double mux, double muy, double mu
 // Update Z Direction Cosine
 double updateDirCosZ(double theta, double phi, double mux, double muy, double muz) {
   double muzPrime;
-    if (abs(muz > 0.99)){
+    if (abs(muz) > 0.99){
       muzPrime = cos(theta) * muz/abs(muz);
     }
         else{
@@ -205,57 +215,14 @@ double intersectionAngle(double x1,double y1,double z1,double x2,double y2,doubl
 // intersectionAngle(c1,c2) - Calculates the intersection angle between a photon trajectory and the plane made by the lidar detector
 // In order to determine if a photon has entered the detector within the FOV of the detector, this function calculates the
 // angle between the unit vector normal to the detector plane and the propegation vector
-  vec c1; vec c2;
-  c1 = ([x1,y1,z1]);   // an array containing the first x,y,z points of the propegation vector
-  c2 = np.array([x2,y2,z2]);   // an array containing the second x,y,z points of the propegation vector
-  u = np.array([0,0,1]);   // create a unit vector normal to the plane of the detector at the origin
-  v = c2-c1;   // convert the propegation vector to a unit vector
-  angle = atan2(LA.norm(np.cross(u,v)),np.dot(u,v)); // calculate the angle between the propegation and the vector normal to the detector plane
+  colvec c1; colvec c2;
+  c1 = vec(x1,y1,z1);   // an array containing the first x,y,z points of the propegation vector
+  c2 = vec(x2,y2,z2);   // an array containing the second x,y,z points of the propegation vector
+  u = vec(0,0,1);   // create a unit vector normal to the plane of the detector at the origin
+  v = c2 - c1;   // convert the propegation vector to a unit vector
+  angle = atan2(norm(cross(u,v)),dot(u,v)); // calculate the angle between the propegation and the vector normal to the detector plane
   return angle;
 }
-
-
-// double gammaCalc(double muz1, double muz2, double theta, double phi){
-//   double gammaCos;
-//   if (pi < phi && phi < 2 * pi){
-//     gammaCos = (muz2 * cos(theta) - muz1) / sqrt((1 - cos(theta) * cos(theta)) * (1 - muz2 * muz2));
-//     below = sqrt((1 - cos(theta) * cos(theta)) * (1 - muz2 * muz2));
-//   }
-//       else{
-//         gammaCos = (muz2 * cos(theta) - muz1) / (-1 * sqrt((1 - cos(theta) * cos(theta)) * (1 - muz2 * muz2)));
-//         gamma = acos(gammaCos);
-//         //below = (-1 * math.sqrt((1-math.cos(theta)**2) * (1 - muz2**2)))
-//       }
-//     return gamma;
-// }
-
-// double gammaCalc(muz1, muz2, theta, phi){
-//     double gammaCos
-//     double pi = 3.1415926535897932384626433832795028841971693993751058209749445923078164062;
-//
-//     if pi < phi < 2 * pi:
-//         gammaCos = (muz2*cos(theta) - muz1) / sqrt((1 - cos(theta)**2) * (1 - muz2**2))
-//         //below = sqrt((1 - cos(theta)**2) * (1 - muz2**2))
-//     else:
-//         gammaCos = (muz2*math.cos(theta) - muz1) / (-1 * math.sqrt((1-math.cos(theta)**2) * (1 - muz2**2)))
-//         //below = (-1 * math.sqrt((1-math.cos(theta)**2) * (1 - muz2**2)))
-//     //print('above' + str((muz2*math.cos(theta) - muz1)))
-//     //print('below'+ str(below))
-//     //print(gammaCos)
-//   return gamma
-// }
-
-// double intersectionAngle(x1,y1,z1,x2,y2,z2){
-// # intersectionAngle(c1,c2) - Calculates the intersection angle between a photon trajectory and the plane made by the lidar detector
-//     # In order to determine if a photon has entered the detector within the FOV of the detector, this function calculates the
-//     # angle between the unit vector normal to the detector plane and the propegation vector
-//     c1 = np.array([x1,y1,z1])   # an array containing the first x,y,z points of the propegation vector
-//     c2 = np.array([x2,y2,z2])   # an array containing the second x,y,z points of the propegation vector
-//     u = np.array([0,0,1])   # create a unit vector normal to the plane of the detector at the origin
-//     v = c2-c1   # convert the propegation vector to a unit vector
-//     angle = math.atan2(LA.norm(np.cross(u,v)),np.dot(u,v))  # calculate the angle between the propegation and the vector normal to the detector plane
-//     return angle
-// }
 
 
 // // Generate a random number array of size (x) with values from 0-1
