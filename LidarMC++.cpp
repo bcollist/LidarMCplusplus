@@ -1,9 +1,11 @@
 #include <cstdlib>
+#include <cstdio>
 #include <cmath>
 #include <ctime>
 #include <iostream>
 #include <random>
 #include <chrono>
+#include <vector>
 #include <armadillo>
 #include "spline.h" // https://github.com/ttk592/spline/
 
@@ -30,128 +32,165 @@ double intersectionAngle(double x1,double y1,double z1,double x2,double y2,doubl
 // main function
 int main (){
 
-  //////////////////////////// define constants //////////////////////////////////
+    //////////////////////////// define constants //////////////////////////////////
 
-  ////// Define Lidar Parameters//////
+    ////// Define Lidar Parameters//////
 
-  // Detector Size and FOV
-  double detectorRad = 1.5e-1; // number of photons to trace
-  double detectorDiam = detectorRad * 2; // detector diameter (m)
-  double detectorArea = pi * detectorRad * detectorRad;
-  double scatLimit = 4; // number of scattering events to trace
-  double FOV = deg2Rad(20); // half-angle FOV; enter in degrees -> converts to rad
+    // Detector Size and FOV
+    double detectorRad = 1.5e-1; // number of photons to trace
+    double detectorDiam = detectorRad * 2; // detector diameter (m)
+    double detectorArea = pi * detectorRad * detectorRad;
+    double scatLimit = 4; // number of scattering events to trace
+    double FOV = deg2Rad(20); // half-angle FOV; enter in degrees -> converts to rad
 
-  // detector position
-  double xd = 0.04; double yd = 0; double zd = 0; // position of the detector in (m)
-  double fd; // variable used in detector photon geometry colculations
-  double anglei; // angle of intersection between photon and detector plane
+    // detector position
+    double xd = 0.04; double yd = 0; double zd = 0; // position of the detector in (m)
+    double fd; // variable used in detector photon geometry colculations
+    double anglei; // angle of intersection between photon and detector plane
 
-  // Define water column IOPs
-  double a = 0.08; //absorption coefficient (m^-^1)
-  double b = 0.01; //scattering coefficient (m^-^1)
-  double c = a+b; //bema attenuation coefficient (m^-^1)
-  double omega = b/c; // single scattering albedo
+    // Define water column IOPs
+    double a = 0.08; //absorption coefficient (m^-^1)
+    double b = 0.01; //scattering coefficient (m^-^1)
+    double c = a + b; //bema attenuation coefficient (m^-^1)
+    double omega = b/c; // single scattering albedo
+    
+    // Photon Tracking and Position Variables
+    double xT; double yT; // variable used to describe the x and y location where a photon intersects the detector plane
+    double hitRad; // radial distance away from detector center that photon crosses detector plane
+    double r;   // photon pathlength variable
+    double theta; // off-axis scattering angle
+    double phi; // scattering angle around the azimuth
+    
+    // Signal Variables
+    vector<double> signal;
+    vector<double> distance;
+    
+    // VSF Probability
+    static const double thetaArray[]={0.1,0.12589,0.15849,0.19953,0.25119,0.31623,0.39811,0.50119,0.63096,0.79433,1.0,1.2589,
+        1.5849,1.9953,2.5119,3.1623,3.9811,5.0119,6.3096,7.9433,10,15,20,25,30,35,40,45,50,
+        55,60,65,70,75,80,85,90,95,100,105,110,115,120,125,130,135,140,145,150,155,160,
+        165,170,175,180};
+    static const double pThetaArray[] = {0.043292475, 0.051470904, 0.061194794, 0.07278701,  0.086643078,
+        0.103058065, 0.122316295, 0.144714728, 0.170373413, 0.199273394,
+        0.23138308,  0.266595059, 0.304726101, 0.345302331, 0.387470778,
+        0.431035572, 0.475832438, 0.5216971,   0.568433689, 0.615808429,
+        0.663612814, 0.749541922, 0.806027674, 0.847981298, 0.877235105,
+        0.898464649, 0.915776837, 0.929298035, 0.940418273, 0.949074367,
+        0.956340431, 0.962153282, 0.967271119, 0.971314842, 0.975042649,
+        0.978012258, 0.9808555,   0.983003728, 0.985215139, 0.986857901,
+        0.988690213, 0.990017059, 0.991533455, 0.992607569, 0.993934416,
+        0.99481898 , 0.995893094, 0.996524926, 0.997472673, 0.997978139,
+        0.998736337, 0.999052252, 0.999620901, 0.999747267, 1.0};
+    
+    vector<double> thetaVec (thetaArray, thetaArray + sizeof(thetaArray) / sizeof(thetaArray[0]));
+    vector<double> pThetaVec (pThetaArray, pThetaArray + sizeof(pThetaArray) / sizeof(pThetaArray[0]));
 
-  // Photon Position Definitions
-  double xT; double yT; // variable used to describe the x and y location where a photon intersects the detector plane
-  double hitRad; // radial distance away from detector center that photon crosses detector plane
+    // Initialize the spline interpolation function
+    tk::spline spl;
+    spl.set_points(pThetaVec,thetaVec);
+    
+    // Mont Carlo parameters
+    //nPhotons = 1000 // number of photons to trace // < 1 second
+    //nPhotons = 10000 // number of photons to trace // ~ 1.5 seconds
+    //Photons = 100000 // number of photons to trace // ~10 seconds
+    //nPhotons = 1000000 // number of photons to trace // ~1.5 min
+    int nPhotons = 100000000; // number of photons to trace // ~10 min
 
-  // VSF Probability
-  double thetaArray[55] = {0.1,0.12589,0.15849,0.19953,0.25119,0.31623,0.39811,0.50119,0.63096,0.79433,1.0,1.2589,
-              1.5849,1.9953,2.5119,3.1623,3.9811,5.0119,6.3096,7.9433,10,15,20,25,30,35,40,45,50,
-              55,60,65,70,75,80,85,90,95,100,105,110,115,120,125,130,135,140,145,150,155,160,
-              165,170,175,180};
+    // define the number of dpeht bins to aggregate photons into
+    //double depthBin [(int)((maxDepth-minDepth)/dDepth)+1] = {0};
 
-  double pTheta[55] = {0.043292475, 0.051470904, 0.061194794, 0.07278701,  0.086643078,
-                   0.103058065, 0.122316295, 0.144714728, 0.170373413, 0.199273394,
-                   0.23138308,  0.266595059, 0.304726101, 0.345302331, 0.387470778,
-                   0.431035572, 0.475832438, 0.5216971,   0.568433689, 0.615808429,
-                   0.663612814, 0.749541922, 0.806027674, 0.847981298, 0.877235105,
-                   0.898464649, 0.915776837, 0.929298035, 0.940418273, 0.949074367,
-                   0.956340431, 0.962153282, 0.967271119, 0.971314842, 0.975042649,
-                   0.978012258, 0.9808555,   0.983003728, 0.985215139, 0.986857901,
-                   0.988690213, 0.990017059, 0.991533455, 0.992607569, 0.993934416,
-                   0.99481898 , 0.995893094, 0.996524926, 0.997472673, 0.997978139,
-                   0.998736337, 0.999052252, 0.999620901, 0.999747267, 1.0};
+    // create depth bin variable with depth bin values
+    //for ( int i = 0; i<((sizeof(depthBin)/sizeof(depthBin[0])+1)); i++){
+    //    depthBin [i] = {(double) (i*0.25)+0.25};
+    //}
 
-  // Mont Carlo parameters
-  //nPhotons = 1000 // number of photons to trace // < 1 second
-  //nPhotons = 10000 // number of photons to trace // ~ 1.5 seconds
-  //Photons = 100000 // number of photons to trace // ~10 seconds
-  //nPhotons = 1000000 // number of photons to trace // ~1.5 min
-  double nPhotons = 1000000; // number of photons to trace // ~10 min
+    //int nBin = sizeof(depthBin)/sizeof(depthBin[0]); // size of bin array
 
-  // define the number of dpeht bins to aggregate photons into
-  //double depthBin [(int)((maxDepth-minDepth)/dDepth)+1] = {0};
-
-  // create depth bin variable with depth bin values
-  //for ( int i = 0; i<((sizeof(depthBin)/sizeof(depthBin[0])+1)); i++){
-  //    depthBin [i] = {(double) (i*0.25)+0.25};
-  //}
-
-  //int nBin = sizeof(depthBin)/sizeof(depthBin[0]); // size of bin array
-
-  //double Signal[nBin] = {0};
+    //double Signal[nBin] = {0};
 
 
-  // Predefined Working Variables
-  mt19937::result_type seed = chrono::high_resolution_clock::now().time_since_epoch().count(); // seed the random number generator
-  auto real_rand = std::bind(std::uniform_real_distribution<double>(0,1),
+    // Predefined Working Variables
+    mt19937::result_type seed = chrono::high_resolution_clock::now().time_since_epoch().count(); // seed the random number generator
+    auto real_rand = std::bind(std::uniform_real_distribution<double>(0,1),
                              mt19937(seed));
 
 
-  // Main Code
-  for (int i = 0; (i = nPhotons) ; i++){      // loop through each individual photon
+    // Main Code
+    for (int i = 0; i < nPhotons; ++i){      // loop through each individual photon
 
-    // Photon Position and Direction Initialization
-    double x1 = 0; double y1 = 0; double z1 = 0; // initialize photon position 1
-    double x2 = 0; double y2 = 0; double z2 = 0; // initialize calculation positions for photons
+        // Photon Position and Direction Initialization
+        double x1 = 0; double y1 = 0; double z1 = 0; // initialize photon position 1
+        double x2 = 0; double y2 = 0; double z2 = 0; // initialize calculation positions for photons
 
-    double mux1 = 0; double muy1 = 0; double muz1 = 1; // initialize new direction cosine variables
-    double mux2 = 0; double muy2 = 0; double muz2 = 1; // initialize new direction cosine calculation variables
+        double mux1 = 0; double muy1 = 0; double muz1 = 1; // initialize new direction cosine variables
+        double mux2 = 0; double muy2 = 0; double muz2 = 1; // initialize new direction cosine calculation variables
 
 
-    // Photon Status variable
-    int status = 1; // status variable 1 = alive 0 = DEAD
-    double rTotal = 0; // total pathlength variable
-    double weight = 1; // current weight of photon (omega^nscat)
-    int nScat = 0; // number of scattering events so far
+        // Photon Status variable
+        int status = 1; // status variable 1 = alive 0 = DEAD
+        double rTotal = 0; // total pathlength variable
+        double weight = 1; // current weight of photon (omega^nscat)
+        int nScat = 0; // number of scattering events so far
+        int count;
+        
+        while (status == 1 && nScat < 10) {   // while the photon is still alive.....
 
-    while (status == 1 && nScat < 10) {   // while the photon is still alive.....
+            // Move Photon
+            r = -1 * log(((double) rand() / (RAND_MAX)))/c; // generate a random propegation distance
+            x2 = x1 + mux1 * r; // update the photon's new x position
+            y2 = x1 + muy1 * r; // update the photon's new y position
+            z2 = x1 + muz1 * r; // update the photon's new z position
+            // Update Pathlength Storage Variable
+            rTotal = rTotal + r;
 
-      // Move Photon
-      double r = -1 * log(rand())/c; // generate a random propegation distance
-      x2 = x1 + mux1 * r; // update the photon's new x position
-      y2 = x1 + muy1 * r; // update the photon's new y position
-      z2 = x1 + muz1 * r; // update the photon's new z position
-
-      // Update Pathlength Storage Variable
-      rTotal = rTotal + r;
-
-      // Did the photon cross the plane of the detector?
-      if (z2 < zd){
-        fd = (zd - z1) / (z2 - z1); // calculate the multiplicative factor for the distance along the photon trajectory to the detector
-        xT = x1 + fd * (x2 - x1); // calculate x-location that photon hits plane
-        yT = x1 + fd * (y2 - y1); // calculate y-location that photon hits plane
-        hitRad = sqrt((xT-xd) * (xT-xd) + (yT-yd) * (yT-yd)); // distance from detector center
-
-        // Did the photon hit the detector?
-        if (hitRad > detectorRad){
-          status = 0;
+            // Did the photon cross the plane of the detector?
+            if (z2 < zd){
+                fd = (zd - z1) / (z2 - z1); // calculate the multiplicative factor for the distance along the photon trajector to the detector
+                xT = x1 + fd * (x2 - x1); // calculate x-location that photon hits plane
+                yT = x1 + fd * (y2 - y1); // calculate y-location that photon hits plane
+                hitRad = sqrt((xT-xd) * (xT-xd) + (yT-yd) * (yT-yd)); // distance from detector center
+                // Did the photon hit the detector?
+                if (hitRad > detectorRad){
+                    status = 0;
+                }
+                else{
+                    anglei = pi - intersectionAngle(x1,y1,z1,x2,y2,z2); // calculate the angle betweenthe
+                    if(anglei <= FOV){
+                        rTotal = rTotal - (r-(fd *r )); // calculate the distance
+                        signal.push_back(pow(omega,nScat)); // count photon in the signal
+                        distance.push_back(rTotal); // record the total pathlength traveled by the photon
+                        status = 0;
+                        }
+                        
+                    else{
+                        status = 0;
+                        }
+                }
+            }
+            else{
+                theta = deg2Rad(spl(rand()));
+                phi = 2 * pi * rand();
+                
+                mux2 = updateDirCosX(theta, phi, mux1, muy1, muz1);
+                muy2 = updateDirCosY(theta, phi, mux1, muy1, muz1);
+                muz2 = updateDirCosZ(theta, phi, mux1, muy1, muz1);
+                //gammaCalc(muz1, muz2, theta, phi)
+                
+                // reset position variables
+                x1 = x2;
+                y1 = y2;
+                z1 = z2;
+                
+                mux1 = mux2;
+                muy1 = muy2;
+                muz1 = muz2;
+                
+                
+                nScat = nScat+1;
+            }
         }
-        else{
-          anglei = pi - intersectionAngle(x1,y1,z1,x2,y2,z2); // calculate the angle betweenthe
-
-          //if(anglei <= FOV){
-            //rTotal = rTotal - (r-(fd*r)) # calculate the distance
-            //signal(omega**nScat) # count photon in the signal
-            //distance.append(rTotal) # record the total pathlength traveled by the photon
-
-        }
-      }
     }
-  }
-  return 0;
+return 0;
 }
 
 
@@ -260,3 +299,5 @@ double intersectionAngle(double x1,double y1,double z1,double x2,double y2,doubl
 //   return r;
 // }
 //
+
+ 

@@ -1,7 +1,0 @@
-/Users/Brian/Documents/C++/LidarMCplusplus/LidarMC++.cpp:99:3: warning: 'auto' type specifier is a C++11 extension [-Wc++11-extensions]
-  auto real_rand = std::bind(std::uniform_real_distribution<double>(0,1),
-  ^
-/Users/Brian/Documents/C++/LidarMCplusplus/LidarMC++.cpp:99:25: error: no member named 'bind' in namespace 'std'
-  auto real_rand = std::bind(std::uniform_real_distribution<double>(0,1),
-                   ~~~~~^
-1 warning and 1 error generated.
