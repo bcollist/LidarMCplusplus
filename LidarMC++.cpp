@@ -3,6 +3,7 @@
 #include <cmath>
 #include <ctime>
 #include <iostream>
+#include <fstream>
 #include <random>
 #include <chrono>
 #include <vector>
@@ -38,8 +39,6 @@ int main (){
 
     // Detector Size and FOV
     double detectorRad = 1.5e-1; // number of photons to trace
-    double detectorDiam = detectorRad * 2; // detector diameter (m)
-    double detectorArea = pi * detectorRad * detectorRad;
     double scatLimit = 4; // number of scattering events to trace
     double FOV = deg2Rad(20); // half-angle FOV; enter in degrees -> converts to rad
 
@@ -49,8 +48,8 @@ int main (){
     double anglei; // angle of intersection between photon and detector plane
 
     // Define water column IOPs
-    double a = 0.08; //absorption coefficient (m^-^1)
-    double b = 0.01; //scattering coefficient (m^-^1)
+    double a = 0.1; //absorption coefficient (m^-^1)
+    double b = 0.1; //scattering coefficient (m^-^1)
     double c = a + b; //bema attenuation coefficient (m^-^1)
     double omega = b/c; // single scattering albedo
     
@@ -62,8 +61,11 @@ int main (){
     double phi; // scattering angle around the azimuth
     
     // Signal Variables
-    vector<double> signal;
-    vector<double> distance;
+    double dBin; // a varible describing the width of each signal bin
+    double max;
+    vector<double> binEdges;
+    vector<double> signal; // a variable used to hold the final signal output
+    vector<double> distance; // distance associated with each signal bin
     
     // VSF Probability
     static const double thetaArray[]={0.1,0.12589,0.15849,0.19953,0.25119,0.31623,0.39811,0.50119,0.63096,0.79433,1.0,1.2589,
@@ -94,7 +96,7 @@ int main (){
     //nPhotons = 10000 // number of photons to trace // ~ 1.5 seconds
     //Photons = 100000 // number of photons to trace // ~10 seconds
     //nPhotons = 1000000 // number of photons to trace // ~1.5 min
-    int nPhotons = 100000000; // number of photons to trace // ~10 min
+    int nPhotons = 100000; // number of photons to trace // ~10 min
 
     // define the number of dpeht bins to aggregate photons into
     //double depthBin [(int)((maxDepth-minDepth)/dDepth)+1] = {0};
@@ -129,9 +131,7 @@ int main (){
         // Photon Status variable
         int status = 1; // status variable 1 = alive 0 = DEAD
         double rTotal = 0; // total pathlength variable
-        double weight = 1; // current weight of photon (omega^nscat)
-        int nScat = 0; // number of scattering events so far
-        int count;
+        double nScat = 0; // number of scattering events so far
         
         while (status == 1 && nScat < 10) {   // while the photon is still alive.....
 
@@ -185,11 +185,70 @@ int main (){
                 muy1 = muy2;
                 muz1 = muz2;
                 
-                
+                //cout << mux1*mux1 + muy1*muy1 + muz1*muz1 << endl;
+
                 nScat = nScat+1;
+                //cout << nScat;
+                //cout << "\n";
             }
         }
     }
+    dBin = 0.25; //bin widths
+    max = *max_element(distance.begin(), distance.end()); //find the maximum value in the distance vector
+    for (int i=0; i<ceil(max/dBin); i++){;
+        binEdges.push_back(i*dBin+dBin);
+    }
+//        distanceBin = np.digitize(distance,binEdges) # index the distance bin that each photon belongs to
+
+    ofstream myfile;
+    myfile.open ("/Users/Brian/Documents/C++/LidarMCplusplus/LidarMC.csv");
+    myfile << "LidarMCplusplus.cpp output file:\n";
+    myfile << "Detector Parameters:\n";
+    myfile << "Radius(m) = ";
+    myfile << detectorRad;
+    myfile << "\n";
+    myfile << "FOV(rad) = ";
+    myfile << FOV;
+    myfile << "\n";
+    myfile << "Medium Parameters:";
+    myfile << "a(m^-1) = ";
+    myfile << a;
+    myfile << "\n";
+    myfile << "b(m^-1) = ";
+    myfile << b;
+    myfile << "\n";
+    myfile << "c(m^-1) = ";
+    myfile << c;
+    myfile << "\n";
+    myfile << "Run Parameters:\n";
+    myfile << "# of photons = \n";
+    myfile << nPhotons;
+    myfile << "\n";
+    myfile << "distance,signal\n";
+    for (int j=0; j<(signal.size()+1); j++){
+        //cout << j << endl;
+        myfile << distance[j];
+        myfile << ",";
+        myfile << signal[j];
+        //cout << signal[j];
+        myfile << "\n";
+    }
+        
+    myfile.close();
+    
+    
+//    return 0;
+//    writer.writerow(['LidarMC.py output file:'])
+//    writer.writerow(['Detector Parameters:'])
+//    writer.writerow(['Radius(m) = '+ str(detectorRad)])
+//    writer.writerow(['FOV(rad) = '+ str(FOV)])
+//    writer.writerow(['Medium Parameters:'])
+//    writer.writerow(['a(m^-1) = '+ str(a)])
+//    writer.writerow(['b(m^-1) = '+ str(b)])
+//    writer.writerow(['c(m^-1) = '+ str(c)])
+//    writer.writerow(['Run Parameters:'])
+//    writer.writerow(['# of photons = ' + str(nPhotons)])
+//    writer.writerow(['z','signal'])
 return 0;
 }
 
@@ -274,6 +333,32 @@ double intersectionAngle(double x1,double y1,double z1,double x2,double y2,doubl
 
   return angle;
 }
+
+//// accumarray like function
+//double accum(accmap, a, func=None, size=None, fill_value=0, dtype=None):
+//
+//// Create an array.
+//vals = np.empty(size, dtype='O')
+//for s in product(*[range(k)for k in size]):
+//vals[s] = []
+//for s in product(*[range(k) for k in a.shape]):
+//indx = tuple(accmap[s])
+//val = a[s]
+//vals[indx].append(val)
+//
+//# Create the output array.
+//out = np.empty(size, dtype=dtype)
+//for s in product(*[range(k) for k in size]):
+//if vals[s] == []:
+//out[s] = fill_value
+//else:
+//out[s] = func(vals[s])
+//
+//return out
+//
+//
+//if __name__ == "__main__":
+//main()
 
 
 // // Generate a random number array of size (x) with values from 0-1
