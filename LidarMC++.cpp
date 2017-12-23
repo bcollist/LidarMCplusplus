@@ -39,8 +39,8 @@ int main (){
 
     // Detector Size and FOV
     double detectorRad = 1.5e-1; // number of photons to trace
-    double scatLimit = 4; // number of scattering events to trace
-    double FOV = deg2Rad(20); // half-angle FOV; enter in degrees -> converts to rad
+    //double scatLimit = 4; // number of scattering events to trace
+    double FOV = deg2Rad(1); // half-angle FOV; enter in degrees -> converts to rad
 
     // detector position
     double xd = 0.04; double yd = 0; double zd = 0; // position of the detector in (m)
@@ -63,8 +63,9 @@ int main (){
     // Signal Variables
     double dBin; // a varible describing the width of each signal bin
     double max;
+    double bd; // temporary variable use to hold the value of distance while binning the signal
     vector<double> binEdges;
-    vector<double> signal; // a variable used to hold the final signal output
+    vector<double> signalWeight; // a variable used to hold the weight of each photon reaching the detector
     vector<double> distance; // distance associated with each signal bin
     
     // VSF Probability
@@ -96,7 +97,7 @@ int main (){
     //nPhotons = 10000 // number of photons to trace // ~ 1.5 seconds
     //Photons = 100000 // number of photons to trace // ~10 seconds
     //nPhotons = 1000000 // number of photons to trace // ~1.5 min
-    int nPhotons = 100000; // number of photons to trace // ~10 min
+    int nPhotons = 100000000; // number of photons to trace // ~10 min
 
     // define the number of dpeht bins to aggregate photons into
     //double depthBin [(int)((maxDepth-minDepth)/dDepth)+1] = {0};
@@ -144,7 +145,7 @@ int main (){
             rTotal = rTotal + r;
 
             // Did the photon cross the plane of the detector?
-            if (z2 < zd){
+            if (z2 < zd){ // if the photons position is above the plane of the detector.... thin it crossed the plane
                 fd = (zd - z1) / (z2 - z1); // calculate the multiplicative factor for the distance along the photon trajector to the detector
                 xT = x1 + fd * (x2 - x1); // calculate x-location that photon hits plane
                 yT = x1 + fd * (y2 - y1); // calculate y-location that photon hits plane
@@ -157,13 +158,13 @@ int main (){
                     anglei = pi - intersectionAngle(x1,y1,z1,x2,y2,z2); // calculate the angle betweenthe
                     if(anglei <= FOV){
                         rTotal = rTotal - (r-(fd *r )); // calculate the distance
-                        signal.push_back(pow(omega,nScat)); // count photon in the signal
-                        distance.push_back(rTotal); // record the total pathlength traveled by the photon
-                        status = 0;
+                        signalWeight.push_back(pow(omega,nScat)); // append photon weight (omega^n) to signal weight vector
+                        distance.push_back(rTotal); // append the total distance travelled by the photon to the distance vector
+                        status = 0; //kill the photon
                         }
                         
                     else{
-                        status = 0;
+                        status = 0; //kill the photon
                         }
                 }
             }
@@ -188,15 +189,20 @@ int main (){
                 //cout << mux1*mux1 + muy1*muy1 + muz1*muz1 << endl;
 
                 nScat = nScat+1;
-                //cout << nScat;
-                //cout << "\n";
             }
         }
     }
-    dBin = 0.25; //bin widths
+    dBin = 0.25; //bin widths (m)
     max = *max_element(distance.begin(), distance.end()); //find the maximum value in the distance vector
-    for (int i=0; i<ceil(max/dBin); i++){;
-        binEdges.push_back(i*dBin+dBin);
+    for (int i=0; i<ceil(max/dBin); i++){
+        binEdges.push_back(i*dBin+dBin); //create a variable containing the upper bin edge of each distance bin
+    }
+    
+    vector <double> signal(binEdges.size(),0.0); // initialize the final signal vector based off of the size of the distance bins vector
+    
+    for (int i=0; i<distance.size(); i++){  //loop through each element of the distance bin......
+        bd = (ceil(distance[i]/dBin)*dBin); //.....find the value of the distance bin that the photon belongs to.....
+        signal.at(int(bd/0.25)-1) = signal[(int(bd/0.25)-1)] + signalWeight[i]; //...add the value of the photon weight to the signal variable at the correct index for its distance bin
     }
 //        distanceBin = np.digitize(distance,binEdges) # index the distance bin that each photon belongs to
 
@@ -226,11 +232,9 @@ int main (){
     myfile << "\n";
     myfile << "distance,signal\n";
     for (int j=0; j<(signal.size()+1); j++){
-        //cout << j << endl;
-        myfile << distance[j];
+        myfile << binEdges[j]/2;
         myfile << ",";
         myfile << signal[j];
-        //cout << signal[j];
         myfile << "\n";
     }
         
@@ -355,10 +359,7 @@ double intersectionAngle(double x1,double y1,double z1,double x2,double y2,doubl
 //out[s] = func(vals[s])
 //
 //return out
-//
-//
-//if __name__ == "__main__":
-//main()
+
 
 
 // // Generate a random number array of size (x) with values from 0-1
