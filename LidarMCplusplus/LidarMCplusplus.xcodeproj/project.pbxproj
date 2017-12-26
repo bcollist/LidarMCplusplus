@@ -29,7 +29,7 @@
 		D39E4BC41FE97ACA00DF3926 /* LidarMC++.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = "LidarMC++.cpp"; path = "../LidarMC++.cpp"; sourceTree = "<group>"; };
 		D39E4BC61FE97AD500DF3926 /* spline.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = spline.h; path = ../spline.h; sourceTree = "<group>"; };
 		D39E4BC71FE97ADB00DF3926 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; name = README.md; path = ../README.md; sourceTree = "<group>"; };
-		D39E4BC91FE97CDB00DF3926 /* LidarMCplusplus */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = LidarMCplusplus; sourceTree = BUILT_PRODUCTS_DIR; };
+		D39E4BC91FE97CDB00DF3926 /* LidarMCplusplus */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; name = LidarMCplusplus; path = "/Users/Brian/Documents/C++/LidarMCplusplus/LidarMCplusplus/build/Debug/LidarMCplusplus"; sourceTree = "<absolute>"; };
 		D39E4BCB1FE9807E00DF3926 /* libarmadillo.8.30.2.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libarmadillo.8.30.2.dylib; path = ../../../../../../usr/local/Cellar/armadillo/8.300.2/lib/libarmadillo.8.30.2.dylib; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -53,7 +53,6 @@
 				D39E4BC41FE97ACA00DF3926 /* LidarMC++.cpp */,
 				D39E4BC61FE97AD500DF3926 /* spline.h */,
 				D39E4BC71FE97ADB00DF3926 /* README.md */,
-				D39E4BC91FE97CDB00DF3926 /* LidarMCplusplus */,
 				D39E4BCA1FE9807D00DF3926 /* Frameworks */,
 			);
 			sourceTree = "<group>";
