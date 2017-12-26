@@ -40,7 +40,7 @@ int main (){
     // Detector Size and FOV
     double detectorRad = 1.5e-1; // number of photons to trace
     //double scatLimit = 4; // number of scattering events to trace
-    double FOV = deg2Rad(1); // half-angle FOV; enter in degrees -> converts to rad
+    double FOV = deg2Rad(20); // half-angle FOV; enter in degrees -> converts to rad
 
     // detector position
     double xd = 0.04; double yd = 0; double zd = 0; // position of the detector in (m)
@@ -97,7 +97,7 @@ int main (){
     //nPhotons = 10000 // number of photons to trace // ~ 1.5 seconds
     //Photons = 100000 // number of photons to trace // ~10 seconds
     //nPhotons = 1000000 // number of photons to trace // ~1.5 min
-    int nPhotons = 100000000; // number of photons to trace // ~10 min
+    int nPhotons = 1000000; // number of photons to trace // ~10 min
 
     // define the number of dpeht bins to aggregate photons into
     //double depthBin [(int)((maxDepth-minDepth)/dDepth)+1] = {0};
@@ -146,52 +146,52 @@ int main (){
 
             // Did the photon cross the plane of the detector?
             if (z2 < zd){ // if the photons position is above the plane of the detector.... thin it crossed the plane
+                status = 0; //kill the photon
+                
                 fd = (zd - z1) / (z2 - z1); // calculate the multiplicative factor for the distance along the photon trajector to the detector
                 xT = x1 + fd * (x2 - x1); // calculate x-location that photon hits plane
                 yT = x1 + fd * (y2 - y1); // calculate y-location that photon hits plane
                 hitRad = sqrt((xT-xd) * (xT-xd) + (yT-yd) * (yT-yd)); // distance from detector center
+                
+                
                 // Did the photon hit the detector?
-                if (hitRad > detectorRad){
-                    status = 0;
-                }
-                else{
+                if (hitRad < detectorRad){
                     anglei = pi - intersectionAngle(x1,y1,z1,x2,y2,z2); // calculate the angle betweenthe
+                    
+                    // Did the photon hit the detector within the FOV?
                     if(anglei <= FOV){
                         rTotal = rTotal - (r-(fd *r )); // calculate the distance
                         signalWeight.push_back(pow(omega,nScat)); // append photon weight (omega^n) to signal weight vector
                         distance.push_back(rTotal); // append the total distance travelled by the photon to the distance vector
-                        status = 0; //kill the photon
-                        }
-                        
-                    else{
-                        status = 0; //kill the photon
-                        }
+                    }
                 }
             }
-            else{
-                theta = deg2Rad(spl(rand()));
-                phi = 2 * pi * rand();
+                else{
+                    theta = deg2Rad(spl(((double) rand() / (RAND_MAX))));
+                    phi = 2 * pi * ((double) rand() / (RAND_MAX));
+                    
+                    mux2 = updateDirCosX(theta, phi, mux1, muy1, muz1);
+                    muy2 = updateDirCosY(theta, phi, mux1, muy1, muz1);
+                    muz2 = updateDirCosZ(theta, phi, mux1, muy1, muz1);
+                    //gammaCalc(muz1, muz2, theta, phi)
                 
-                mux2 = updateDirCosX(theta, phi, mux1, muy1, muz1);
-                muy2 = updateDirCosY(theta, phi, mux1, muy1, muz1);
-                muz2 = updateDirCosZ(theta, phi, mux1, muy1, muz1);
-                //gammaCalc(muz1, muz2, theta, phi)
+                    // reset position variables
+                    x1 = x2;
+                    y1 = y2;
+                    z1 = z2;
                 
-                // reset position variables
-                x1 = x2;
-                y1 = y2;
-                z1 = z2;
-                
-                mux1 = mux2;
-                muy1 = muy2;
-                muz1 = muz2;
-                
-                //cout << mux1*mux1 + muy1*muy1 + muz1*muz1 << endl;
+                    mux1 = mux2;
+                    muy1 = muy2;
+                    muz1 = muz2;
+                    
+                    //cout << mux1*mux1 + muy1*muy1 + muz1*muz1 << endl;
 
-                nScat = nScat+1;
-            }
+                    nScat = nScat+1;
+                    }
+            
         }
     }
+        
     dBin = 0.25; //bin widths (m)
     max = *max_element(distance.begin(), distance.end()); //find the maximum value in the distance vector
     for (int i=0; i<ceil(max/dBin); i++){
@@ -204,7 +204,6 @@ int main (){
         bd = (ceil(distance[i]/dBin)*dBin); //.....find the value of the distance bin that the photon belongs to.....
         signal.at(int(bd/0.25)-1) = signal[(int(bd/0.25)-1)] + signalWeight[i]; //...add the value of the photon weight to the signal variable at the correct index for its distance bin
     }
-//        distanceBin = np.digitize(distance,binEdges) # index the distance bin that each photon belongs to
 
     ofstream myfile;
     myfile.open ("/Users/Brian/Documents/C++/LidarMCplusplus/LidarMC.csv");
@@ -239,20 +238,6 @@ int main (){
     }
         
     myfile.close();
-    
-    
-//    return 0;
-//    writer.writerow(['LidarMC.py output file:'])
-//    writer.writerow(['Detector Parameters:'])
-//    writer.writerow(['Radius(m) = '+ str(detectorRad)])
-//    writer.writerow(['FOV(rad) = '+ str(FOV)])
-//    writer.writerow(['Medium Parameters:'])
-//    writer.writerow(['a(m^-1) = '+ str(a)])
-//    writer.writerow(['b(m^-1) = '+ str(b)])
-//    writer.writerow(['c(m^-1) = '+ str(c)])
-//    writer.writerow(['Run Parameters:'])
-//    writer.writerow(['# of photons = ' + str(nPhotons)])
-//    writer.writerow(['z','signal'])
 return 0;
 }
 
@@ -312,6 +297,7 @@ double updateDirCosZ(double theta, double phi, double mux, double muy, double mu
   return muzPrime;
 }
 
+// Determine the angle of intersection between the photon trajectory and the plane of the detector
 double intersectionAngle(double x1,double y1,double z1,double x2,double y2,double z2){
 // intersectionAngle(c1,c2) - Calculates the intersection angle between a photon trajectory and the plane made by the lidar detector
 // In order to determine if a photon has entered the detector within the FOV of the detector, this function calculates the
@@ -337,29 +323,6 @@ double intersectionAngle(double x1,double y1,double z1,double x2,double y2,doubl
 
   return angle;
 }
-
-//// accumarray like function
-//double accum(accmap, a, func=None, size=None, fill_value=0, dtype=None):
-//
-//// Create an array.
-//vals = np.empty(size, dtype='O')
-//for s in product(*[range(k)for k in size]):
-//vals[s] = []
-//for s in product(*[range(k) for k in a.shape]):
-//indx = tuple(accmap[s])
-//val = a[s]
-//vals[indx].append(val)
-//
-//# Create the output array.
-//out = np.empty(size, dtype=dtype)
-//for s in product(*[range(k) for k in size]):
-//if vals[s] == []:
-//out[s] = fill_value
-//else:
-//out[s] = func(vals[s])
-//
-//return out
-
 
 
 // // Generate a random number array of size (x) with values from 0-1
