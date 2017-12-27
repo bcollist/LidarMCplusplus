@@ -29,6 +29,8 @@ double updateDirCosZ(double theta, double phi, double mux, double muy, double mu
 
 //
 double intersectionAngle(double x1,double y1,double z1,double x2,double y2,double z2);
+double intersectionPointX(double x1,double y1,double z1,double x2,double y2,double z2);
+double intersectionPointY(double x1,double y1,double z1,double x2,double y2,double z2);
 
 // main function
 int main (){
@@ -93,11 +95,11 @@ int main (){
     spl.set_points(pThetaVec,thetaVec);
     
     // Mont Carlo parameters
-    //nPhotons = 1000 // number of photons to trace // < 1 second
-    //nPhotons = 10000 // number of photons to trace // ~ 1.5 seconds
-    //Photons = 100000 // number of photons to trace // ~10 seconds
-    //nPhotons = 1000000 // number of photons to trace // ~1.5 min
-    int nPhotons = 1000000; // number of photons to trace // ~10 min
+    //nPhotons = 1000 // number of photons to trace
+    //nPhotons = 10000 // number of photons to trace
+    //Photons = 100000 // number of photons to trace
+    //nPhotons = 1000000 // number of photons to trace
+    int nPhotons = 1000000; // number of photons to trace
 
     // define the number of dpeht bins to aggregate photons into
     //double depthBin [(int)((maxDepth-minDepth)/dDepth)+1] = {0};
@@ -126,7 +128,7 @@ int main (){
         double x2 = 0; double y2 = 0; double z2 = 0; // initialize calculation positions for photons
 
         double mux1 = 0; double muy1 = 0; double muz1 = 1; // initialize new direction cosine variables
-        double mux2 = 0; double muy2 = 0; double muz2 = 1; // initialize new direction cosine calculation variables
+        double mux2 = 0; double muy2 = 0; double muz2 = 0; // initialize new direction cosine calculation variables
 
 
         // Photon Status variable
@@ -139,18 +141,18 @@ int main (){
             // Move Photon
             r = -1 * log(((double) rand() / (RAND_MAX)))/c; // generate a random propegation distance
             x2 = x1 + mux1 * r; // update the photon's new x position
-            y2 = x1 + muy1 * r; // update the photon's new y position
-            z2 = x1 + muz1 * r; // update the photon's new z position
+            y2 = y1 + muy1 * r; // update the photon's new y position
+            z2 = z1 + muz1 * r; // update the photon's new z position
             // Update Pathlength Storage Variable
             rTotal = rTotal + r;
 
             // Did the photon cross the plane of the detector?
-            if (z2 < zd){ // if the photons position is above the plane of the detector.... thin it crossed the plane
+            if (z2 < zd){ // if the photons position is above the plane of the detector.... then it crossed the plane
                 status = 0; //kill the photon
                 
                 fd = (zd - z1) / (z2 - z1); // calculate the multiplicative factor for the distance along the photon trajector to the detector
                 xT = x1 + fd * (x2 - x1); // calculate x-location that photon hits plane
-                yT = x1 + fd * (y2 - y1); // calculate y-location that photon hits plane
+                yT = y1 + fd * (y2 - y1); // calculate y-location that photon hits plane
                 hitRad = sqrt((xT-xd) * (xT-xd) + (yT-yd) * (yT-yd)); // distance from detector center
                 
                 
@@ -160,7 +162,7 @@ int main (){
                     
                     // Did the photon hit the detector within the FOV?
                     if(anglei <= FOV){
-                        rTotal = rTotal - (r-(fd *r )); // calculate the distance
+                        rTotal = rTotal - (r-(fd *r )); // calculate the distance; validate this again
                         signalWeight.push_back(pow(omega,nScat)); // append photon weight (omega^n) to signal weight vector
                         distance.push_back(rTotal); // append the total distance travelled by the photon to the distance vector
                     }
@@ -323,6 +325,30 @@ double intersectionAngle(double x1,double y1,double z1,double x2,double y2,doubl
   angle = atan2(norm(cross(u,v)),dot(u,v)); // calculate the angle between the propegation vector and the vector normal to the detector plane
 
   return angle;
+}
+
+double intersectionPointX(double x1, double y1, double z1, double x2, double y2, double z2){
+    double t; double xi;
+    // Find the point of intersection between a line and the plane occupied by the detector (ie. the plane created by the x and y axis
+    // Parametric equation for a line r(t) = <x1,y1,z1> + t<x2-x1, y2-y1, z2-z1>
+    // or <x1 + t*(x2-x1), y1 + t(y2-y1), z1 + t(z2-z1)>
+    // Step (1) - plug z coordinate into plane equation and solve for t
+    t = -1 * z1 / (z2-z1);
+    xi = x1 + t*(x2-x1);
+    
+    return xi;
+}
+
+double intersectionPointY(double x1, double y1, double z1, double x2, double y2, double z2){
+    double t; double yi;
+    // Find the point of intersection between a line and the plane occupied by the detector (ie. the plane created by the x and y axis
+    // Parametric equation for a line r(t) = <x1,y1,z1> + t<x2-x1, y2-y1, z2-z1>
+    // or <x1 + t*(x2-x1), y1 + t(y2-y1), z1 + t(z2-z1)>
+    // Step (1) - plug z coordinate into plane equation and solve for t
+    t = -1 * z1 / (z2-z1);
+    yi = y1 + t*(y2-y1);
+    
+    return yi;
 }
 
 
