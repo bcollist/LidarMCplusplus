@@ -50,8 +50,8 @@ int main (){
     double anglei; // angle of intersection between photon and detector plane
 
     // Define water column IOPs
-    double a = 0.1; //absorption coefficient (m^-^1)
-    double b = 0.1; //scattering coefficient (m^-^1)
+    double a = 0.05; //absorption coefficient (m^-^1)
+    double b = 0.5; //scattering coefficient (m^-^1)
     double c = a + b; //bema attenuation coefficient (m^-^1)
     double omega = b/c; // single scattering albedo
     
@@ -99,7 +99,7 @@ int main (){
     //nPhotons = 10000 // number of photons to trace
     //Photons = 100000 // number of photons to trace
     //nPhotons = 1000000 // number of photons to trace
-    int nPhotons = 1000000; // number of photons to trace
+    int nPhotons = 10000000; // number of photons to trace
 
     // define the number of dpeht bins to aggregate photons into
     //double depthBin [(int)((maxDepth-minDepth)/dDepth)+1] = {0};
@@ -218,6 +218,7 @@ int main (){
     myfile << FOV;
     myfile << "\n";
     myfile << "Medium Parameters:";
+    myfile << "\n";
     myfile << "a(m^-1) = ";
     myfile << a;
     myfile << "\n";
@@ -349,6 +350,24 @@ double intersectionPointY(double x1, double y1, double z1, double x2, double y2,
     yi = y1 + t*(y2-y1);
     
     return yi;
+}
+mat updateStokes(mat stokes, mat mueller, double phi, double gamma){
+    mat rotationIn; mat rotationOut; mat stokesPrime;
+    
+    rotationIn  << 1 <<        0      <<      0        << 0 << endr
+    << 0 <<  (cos(-2*phi))  << (sin(-2*phi))   << 0 << endr
+    << 0 << (-1*sin(-2*phi))  << (cos(-2*phi))   << 0 << endr
+    << 0 <<        0      <<      0        << 1 << endr;
+    
+    rotationOut  << 1 <<        0      <<      0         << 0 << endr
+    << 0 << (cos(-2*gamma)) << (sin(-2*gamma))  << 0 << endr
+    << 0 << (-1*sin(-2*gamma))<< (cos(-2*gamma))  << 0 << endr
+    << 0 <<        0      <<      0         << 1 << endr;
+    
+    stokesPrime = (rotationOut * mueller) * rotationIn * stokes;
+    
+    return stokesPrime;
+    
 }
 
 
