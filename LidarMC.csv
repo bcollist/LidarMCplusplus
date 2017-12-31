@@ -2,7 +2,8 @@ LidarMCplusplus.cpp output file:
 Detector Parameters:
 Radius(m) = 0.15
 FOV(rad) = 0.349066
-Medium Parameters:a(m^-1) = 0.05
+Medium Parameters:
+a(m^-1) = 0.05
 b(m^-1) = 0.5
 c(m^-1) = 0.55
 Run Parameters:
@@ -129,4 +130,4 @@ distance,signal
 14.75,0
 14.875,0
 15,0.424098
-3.47664e-310,0
+0.375657,0

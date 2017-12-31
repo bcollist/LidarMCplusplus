@@ -23,18 +23,23 @@ double rad2Deg(double); // convert radians to degrees
 double deg2Rad(double); // convert degrees to radians
 
 // Direction Cosine Functions
-double updateDirCosX(double theta, double phi, double mux, double muy, double muz);
-double updateDirCosY(double theta, double phi, double mux, double muy, double muz);
-double updateDirCosZ(double theta, double phi, double mux, double muy, double muz);
+double updateDirCosX(double theta, double phi, double mux, double muy, double muz); // update X direction cosine
+double updateDirCosY(double theta, double phi, double mux, double muy, double muz); // update Y direction cosine
+double updateDirCosZ(double theta, double phi, double mux, double muy, double muz); // update Z direction cosine
 
-//
-double intersectionAngle(double x1,double y1,double z1,double x2,double y2,double z2);
-double intersectionPointX(double x1,double y1,double z1,double x2,double y2,double z2);
-double intersectionPointY(double x1,double y1,double z1,double x2,double y2,double z2);
+// Detector FOV Calculations
+double intersectionAngle(double x1,double y1,double z1,double x2,double y2,double z2); // angle of intersection between detector and photon trajectory
+
+double intersectionPointX(double x1,double y1,double z1,double x2,double y2,double z2); // x location of intersection with detector plane
+double intersectionPointY(double x1,double y1,double z1,double x2,double y2,double z2); // y location of intersection with detector plane
+
+// Mueller Matrix Math
+mat updateStokes(mat stokes, mat mueller, double phi, double gamma); // update photon stokes vector
+double gammaCalc(double muz1, double muz2, double theta, double phi); // calculate the rotation angle
 
 // main function
 int main (){
-
+    
     //////////////////////////// define constants //////////////////////////////////
 
     ////// Define Lidar Parameters//////
@@ -64,9 +69,9 @@ int main (){
     
     // Signal Variables
     double dBin; // a varible describing the width of each signal bin
-    double max;
+    double max; // maximum distance traveled by a photon
     double bd; // temporary variable use to hold the value of distance while binning the signal
-    vector<double> binEdges;
+    vector<double> binEdges; // upper edges of signal bins
     vector<double> signalWeight; // a variable used to hold the weight of each photon reaching the detector
     vector<double> distance; // distance associated with each signal bin
     
@@ -87,12 +92,12 @@ int main (){
         0.99481898 , 0.995893094, 0.996524926, 0.997472673, 0.997978139,
         0.998736337, 0.999052252, 0.999620901, 0.999747267, 1.0};
     
-    vector<double> thetaVec (thetaArray, thetaArray + sizeof(thetaArray) / sizeof(thetaArray[0]));
-    vector<double> pThetaVec (pThetaArray, pThetaArray + sizeof(pThetaArray) / sizeof(pThetaArray[0]));
+    vector<double> thetaVec (thetaArray, thetaArray + sizeof(thetaArray) / sizeof(thetaArray[0])); // vector containing angles between 0 and 180 that are used to define VSF
+    vector<double> pThetaVec (pThetaArray, pThetaArray + sizeof(pThetaArray) / sizeof(pThetaArray[0])); // vector containing the cumulative probability of scattering at angles defined above
 
     // Initialize the spline interpolation function
-    tk::spline spl;
-    spl.set_points(pThetaVec,thetaVec);
+    tk::spline spl; // define the spline interpolation function
+    spl.set_points(pThetaVec,thetaVec); // set the x and y values the the spline interpolation will operate on
     
     // Mont Carlo parameters
     //nPhotons = 1000 // number of photons to trace
@@ -157,11 +162,11 @@ int main (){
                 
                 
                 // Did the photon hit the detector?
-                if (hitRad < detectorRad){
-                    anglei = intersectionAngle(x1,y1,z1,x2,y2,z2); // calculate the angle betweenthe
+                if (hitRad < detectorRad){      // yes, if the photon hits within the radius of the detector
+                    anglei = intersectionAngle(x1,y1,z1,x2,y2,z2); // calculate the angle between the detector plane and photon trajectory
                     
                     // Did the photon hit the detector within the FOV?
-                    if(anglei <= FOV){
+                    if(anglei <= FOV){      // yes, if the intersection angle is less than the 1/2 angle FOV
                         rTotal = rTotal - (r-(fd *r )); // calculate the distance; validate this again
                         signalWeight.push_back(pow(omega,nScat)); // append photon weight (omega^n) to signal weight vector
                         distance.push_back(rTotal); // append the total distance travelled by the photon to the distance vector
@@ -169,12 +174,12 @@ int main (){
                 }
             }
                 else{
-                    theta = deg2Rad(spl(((double) rand() / (RAND_MAX))));
-                    phi = 2 * pi * ((double) rand() / (RAND_MAX));
+                    theta = deg2Rad(spl(((double) rand() / (RAND_MAX)))); // generate a random scattering angle from the VSF
+                    phi = 2 * pi * ((double) rand() / (RAND_MAX));  // generate a
                     
-                    mux2 = updateDirCosX(theta, phi, mux1, muy1, muz1);
-                    muy2 = updateDirCosY(theta, phi, mux1, muy1, muz1);
-                    muz2 = updateDirCosZ(theta, phi, mux1, muy1, muz1);
+                    mux2 = updateDirCosX(theta, phi, mux1, muy1, muz1); // update the photon X direction cosine
+                    muy2 = updateDirCosY(theta, phi, mux1, muy1, muz1); // update the photon Y direction cosine
+                    muz2 = updateDirCosZ(theta, phi, mux1, muy1, muz1); // update the photon Z direction cosine
                     //gammaCalc(muz1, muz2, theta, phi)
                 
                     // reset position variables
@@ -188,7 +193,7 @@ int main (){
                     
                     //cout << mux1*mux1 + muy1*muy1 + muz1*muz1 << endl;
 
-                    nScat = nScat+1;
+                    nScat = nScat+1; // update the number of scattering events
                     }
             
         }
@@ -208,6 +213,7 @@ int main (){
     }
 
     ofstream myfile;
+    // Write File Header
     myfile.open ("/Users/Brian/Documents/C++/LidarMCplusplus/LidarMC.csv");
     myfile << "LidarMCplusplus.cpp output file:\n";
     myfile << "Detector Parameters:\n";
@@ -233,6 +239,7 @@ int main (){
     myfile << nPhotons;
     myfile << "\n";
     myfile << "distance,signal\n";
+    // Write Signal
     for (int j=0; j<(signal.size()+1); j++){
         myfile << binEdges[j]/2;
         myfile << ",";
@@ -317,9 +324,9 @@ double intersectionAngle(double x1,double y1,double z1,double x2,double y2,doubl
        << y2 << endr  // vector declarations are made using c++94 style
        << z2 << endr; // an array containing the second x,y,z points of the propegation vector
 
-  u   << 0 << endr
-      << 0 << endr
-      << -1 << endr;   // create a unit vector normal to the plane of the detector at the origin
+  u   <<  0  << endr
+      <<  0  << endr
+      << -1  << endr;   // create a unit vector normal to the plane of the detector at the origin
 
   v = c2 - c1;   // convert the propegation vector to a unit vector
 
@@ -329,11 +336,15 @@ double intersectionAngle(double x1,double y1,double z1,double x2,double y2,doubl
 }
 
 double intersectionPointX(double x1, double y1, double z1, double x2, double y2, double z2){
+// Find the point of intersection between a line and the plane occupied by the detector (ie. the plane created by the x and y axis
+// Parametric equation for a line r(t) = <x1,y1,z1> + t<x2-x1, y2-y1, z2-z1>
+// or <x1 + t*(x2-x1), y1 + t(y2-y1), z1 + t(z2-z1)>
+// Step (1) - plug z coordinate into plane equation and solve for t
+    
+    //Variable Initialization
     double t; double xi;
-    // Find the point of intersection between a line and the plane occupied by the detector (ie. the plane created by the x and y axis
-    // Parametric equation for a line r(t) = <x1,y1,z1> + t<x2-x1, y2-y1, z2-z1>
-    // or <x1 + t*(x2-x1), y1 + t(y2-y1), z1 + t(z2-z1)>
-    // Step (1) - plug z coordinate into plane equation and solve for t
+    
+    //Function Body
     t = -1 * z1 / (z2-z1);
     xi = x1 + t*(x2-x1);
     
@@ -341,33 +352,55 @@ double intersectionPointX(double x1, double y1, double z1, double x2, double y2,
 }
 
 double intersectionPointY(double x1, double y1, double z1, double x2, double y2, double z2){
+// Find the point of intersection between a line and the plane occupied by the detector (ie. the plane created by the x and y axis
+// Parametric equation for a line r(t) = <x1,y1,z1> + t<x2-x1, y2-y1, z2-z1>
+// or <x1 + t*(x2-x1), y1 + t(y2-y1), z1 + t(z2-z1)>
+// Step (1) - plug z coordinate into plane equation and solve for t
+    
+    //Variable Initialization
     double t; double yi;
-    // Find the point of intersection between a line and the plane occupied by the detector (ie. the plane created by the x and y axis
-    // Parametric equation for a line r(t) = <x1,y1,z1> + t<x2-x1, y2-y1, z2-z1>
-    // or <x1 + t*(x2-x1), y1 + t(y2-y1), z1 + t(z2-z1)>
-    // Step (1) - plug z coordinate into plane equation and solve for t
+    
+    //Function Body
     t = -1 * z1 / (z2-z1);
     yi = y1 + t*(y2-y1);
     
     return yi;
 }
 mat updateStokes(mat stokes, mat mueller, double phi, double gamma){
+    // Variable Initialization
     mat rotationIn; mat rotationOut; mat stokesPrime;
     
-    rotationIn  << 1 <<        0      <<      0        << 0 << endr
-    << 0 <<  (cos(-2*phi))  << (sin(-2*phi))   << 0 << endr
-    << 0 << (-1*sin(-2*phi))  << (cos(-2*phi))   << 0 << endr
-    << 0 <<        0      <<      0        << 1 << endr;
+    //Function Body
+    rotationIn  << 1 << 0 << 0 << 0 << endr
+                << 0 << (cos(-2*phi)) << (sin(-2*phi)) << 0 << endr
+                << 0 << (-1*sin(-2*phi)) << (cos(-2*phi)) << 0 << endr
+                << 0 << 0 << 0 << 1 << endr;
     
-    rotationOut  << 1 <<        0      <<      0         << 0 << endr
-    << 0 << (cos(-2*gamma)) << (sin(-2*gamma))  << 0 << endr
-    << 0 << (-1*sin(-2*gamma))<< (cos(-2*gamma))  << 0 << endr
-    << 0 <<        0      <<      0         << 1 << endr;
+    rotationOut  << 1 << 0 << 0 << 0 << endr
+                 << 0 << (cos(-2*gamma)) << (sin(-2*gamma)) << 0 << endr
+                 << 0 << (-1*sin(-2*gamma))<< (cos(-2*gamma))  << 0 << endr
+                 << 0 << 0 << 0 << 1 << endr;
     
     stokesPrime = (rotationOut * mueller) * rotationIn * stokes;
     
     return stokesPrime;
+}
+
+double gammaCalc(double muz1, double muz2, double theta, double phi){
+    // Variable Initialization
+    double gammaCos; double gamma;
     
+    //Function Body
+    if (pi < phi < 2*pi){
+        gammaCos = (muz2*cos(theta) - muz1) / sqrt((1 - cos(theta) * cos(theta)) * (1 - muz2 * muz2));
+    }
+    else{
+        gammaCos = (muz2*cos(theta) - muz1) / (-1 * sqrt((1-cos(theta)*cos(theta)) * (1 - muz2 * muz2)));
+        
+    }
+    //gamma = acos(gammaCos);
+    
+    return gammaCos;
 }
 
 
