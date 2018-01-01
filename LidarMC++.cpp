@@ -60,6 +60,7 @@ int main (){
     double c = a + b; //bema attenuation coefficient (m^-^1)
     double omega = b/c; // single scattering albedo
     
+    
     // Photon Tracking and Position Variables
     double xT; double yT; // variable used to describe the x and y location where a photon intersects the detector plane
     double hitRad; // radial distance away from detector center that photon crosses detector plane
@@ -67,6 +68,9 @@ int main (){
     double theta; // off-axis scattering angle
     double phi; // scattering angle around the azimuth
     
+    // Polarization
+    mat stokes; mat mueller;
+   
     // Signal Variables
     double dBin; // a varible describing the width of each signal bin
     double max; // maximum distance traveled by a photon
@@ -106,19 +110,6 @@ int main (){
     //nPhotons = 1000000 // number of photons to trace
     int nPhotons = 10000000; // number of photons to trace
 
-    // define the number of dpeht bins to aggregate photons into
-    //double depthBin [(int)((maxDepth-minDepth)/dDepth)+1] = {0};
-
-    // create depth bin variable with depth bin values
-    //for ( int i = 0; i<((sizeof(depthBin)/sizeof(depthBin[0])+1)); i++){
-    //    depthBin [i] = {(double) (i*0.25)+0.25};
-    //}
-
-    //int nBin = sizeof(depthBin)/sizeof(depthBin[0]); // size of bin array
-
-    //double Signal[nBin] = {0};
-
-
     // Predefined Working Variables
     mt19937::result_type seed = chrono::high_resolution_clock::now().time_since_epoch().count(); // seed the random number generator
     auto real_rand = std::bind(std::uniform_real_distribution<double>(0,1),
@@ -141,8 +132,16 @@ int main (){
         double rTotal = 0; // total pathlength variable
         double nScat = 0; // number of scattering events so far
         
+        // Polarization
+        stokes << 1 << endr     // initialize vertically polarized photon
+               << 1 << endr
+               << 0 << endr
+               << 0 << endr;
+        
         while (status == 1 && nScat < 10) {   // while the photon is still alive.....
 
+
+            
             // Move Photon
             r = -1 * log(((double) rand() / (RAND_MAX)))/c; // generate a random propegation distance
             x2 = x1 + mux1 * r; // update the photon's new x position
@@ -378,7 +377,7 @@ mat updateStokes(mat stokes, mat mueller, double phi, double gamma){
     
     rotationOut  << 1 << 0 << 0 << 0 << endr
                  << 0 << (cos(-2*gamma)) << (sin(-2*gamma)) << 0 << endr
-                 << 0 << (-1*sin(-2*gamma))<< (cos(-2*gamma))  << 0 << endr
+                 << 0 << (-1*sin(-2*gamma)) << (cos(-2*gamma)) << 0 << endr
                  << 0 << 0 << 0 << 1 << endr;
     
     stokesPrime = (rotationOut * mueller) * rotationIn * stokes;

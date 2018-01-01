@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		D34CA9E21FF9860E00282F40 /* bhmie.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D34CA9E01FF9860E00282F40 /* bhmie.cpp */; };
 		D39E4BC51FE97ACA00DF3926 /* LidarMC++.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D39E4BC41FE97ACA00DF3926 /* LidarMC++.cpp */; };
 		D39E4BCC1FE9807E00DF3926 /* libarmadillo.8.30.2.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = D39E4BCB1FE9807E00DF3926 /* libarmadillo.8.30.2.dylib */; };
 /* End PBXBuildFile section */
@@ -24,12 +25,13 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		D34CA9DF1FF985F700282F40 /* LidarMCplusplus */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = LidarMCplusplus; sourceTree = BUILT_PRODUCTS_DIR; };
+		D34CA9E01FF9860E00282F40 /* bhmie.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = bhmie.cpp; sourceTree = "<group>"; };
 		D39E4BC21FE97AA400DF3926 /* compiling_error.txt */ = {isa = PBXFileReference; lastKnownFileType = text; name = compiling_error.txt; path = ../compiling_error.txt; sourceTree = "<group>"; };
 		D39E4BC31FE97AC300DF3926 /* LICENSE */ = {isa = PBXFileReference; lastKnownFileType = text; name = LICENSE; path = ../LICENSE; sourceTree = "<group>"; };
 		D39E4BC41FE97ACA00DF3926 /* LidarMC++.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = "LidarMC++.cpp"; path = "../LidarMC++.cpp"; sourceTree = "<group>"; };
 		D39E4BC61FE97AD500DF3926 /* spline.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = spline.h; path = ../spline.h; sourceTree = "<group>"; };
 		D39E4BC71FE97ADB00DF3926 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; name = README.md; path = ../README.md; sourceTree = "<group>"; };
-		D39E4BC91FE97CDB00DF3926 /* LidarMCplusplus */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; name = LidarMCplusplus; path = "/Users/Brian/Documents/C++/LidarMCplusplus/LidarMCplusplus/build/Debug/LidarMCplusplus"; sourceTree = "<absolute>"; };
 		D39E4BCB1FE9807E00DF3926 /* libarmadillo.8.30.2.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libarmadillo.8.30.2.dylib; path = ../../../../../../usr/local/Cellar/armadillo/8.300.2/lib/libarmadillo.8.30.2.dylib; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -48,12 +50,14 @@
 		D39E4BAF1FE97A2200DF3926 = {
 			isa = PBXGroup;
 			children = (
+				D34CA9E01FF9860E00282F40 /* bhmie.cpp */,
 				D39E4BC21FE97AA400DF3926 /* compiling_error.txt */,
 				D39E4BC31FE97AC300DF3926 /* LICENSE */,
 				D39E4BC41FE97ACA00DF3926 /* LidarMC++.cpp */,
 				D39E4BC61FE97AD500DF3926 /* spline.h */,
 				D39E4BC71FE97ADB00DF3926 /* README.md */,
 				D39E4BCA1FE9807D00DF3926 /* Frameworks */,
+				D34CA9DF1FF985F700282F40 /* LidarMCplusplus */,
 			);
 			sourceTree = "<group>";
 		};
@@ -82,7 +86,7 @@
 			);
 			name = LidarMCplusplus;
 			productName = LidarMCplusplus;
-			productReference = D39E4BC91FE97CDB00DF3926 /* LidarMCplusplus */;
+			productReference = D34CA9DF1FF985F700282F40 /* LidarMCplusplus */;
 			productType = "com.apple.product-type.tool";
 		};
 /* End PBXNativeTarget section */
@@ -123,6 +127,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				D39E4BC51FE97ACA00DF3926 /* LidarMC++.cpp in Sources */,
+				D34CA9E21FF9860E00282F40 /* bhmie.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
