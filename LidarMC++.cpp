@@ -66,7 +66,7 @@ int main (){
     double hitRad; // radial distance away from detector center that photon crosses detector plane
     double r;   // photon pathlength variable
     double theta; // off-axis scattering angle
-    double phi; // scattering angle around the azimuth
+    double phi; // scattering angle around the azimuth; if vector is coming at you, this is a counterclockwise rotation
     
     // Polarization
     mat stokes; mat mueller;
@@ -120,11 +120,11 @@ int main (){
     for (int i = 0; i < nPhotons; ++i){      // loop through each individual photon
 
         // Photon Position and Direction Initialization
-        double x1 = 0; double y1 = 0; double z1 = 0; // initialize photon position 1
-        double x2 = 0; double y2 = 0; double z2 = 0; // initialize calculation positions for photons
+        double x1 = 0.0; double y1 = 0.0; double z1 = 0.0; // initialize photon position 1
+        double x2 = 0.0; double y2 = 0.0; double z2 = 0.0; // initialize calculation positions for photons
 
-        double mux1 = 0; double muy1 = 0; double muz1 = 1; // initialize new direction cosine variables
-        double mux2 = 0; double muy2 = 0; double muz2 = 0; // initialize new direction cosine calculation variables
+        double mux1 = 0.0; double muy1 = 0.0; double muz1 = 1.0; // initialize new direction cosine variables
+        double mux2 = 0.0; double muy2 = 0.0; double muz2 = 0.0; // initialize new direction cosine calculation variables
 
 
         // Photon Status variable
@@ -370,12 +370,12 @@ mat updateStokes(mat stokes, mat mueller, double phi, double gamma){
     mat rotationIn; mat rotationOut; mat stokesPrime;
     
     //Function Body
-    rotationIn  << 1 << 0 << 0 << 0 << endr
+    rotationIn  << 1 << 0 << 0 << 0 << endr // Rotates the photon counterclockwise (if photon is coming at you) by angle phi into the scattering plane
                 << 0 << (cos(-2*phi)) << (sin(-2*phi)) << 0 << endr
                 << 0 << (-1*sin(-2*phi)) << (cos(-2*phi)) << 0 << endr
                 << 0 << 0 << 0 << 1 << endr;
     
-    rotationOut  << 1 << 0 << 0 << 0 << endr
+    rotationOut  << 1 << 0 << 0 << 0 << endr // Rotates the photon counterclockwise (if photon is coming at you) by angle gamma into the new scattering plane
                  << 0 << (cos(-2*gamma)) << (sin(-2*gamma)) << 0 << endr
                  << 0 << (-1*sin(-2*gamma)) << (cos(-2*gamma)) << 0 << endr
                  << 0 << 0 << 0 << 1 << endr;
