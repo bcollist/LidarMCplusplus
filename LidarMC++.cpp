@@ -386,18 +386,24 @@ mat updateStokes(mat stokes, mat mueller, double phi, double gamma){
 }
 
 double gammaCalc(double muz1, double muz2, double theta, double phi){
+    
+    // Calculates the angle of rotation back into the new photon coordinate space using sperical trig cosine identity
+    //cosa = cos(b)cos(c) + sin(b)sin(c)cos(A)
+    // set the unknown angle to be A, rearrange, and solve
+    // See http://mathworld.wolfram.com/SphericalTrigonometry.html for more detailsif you need some visual help
+    
     // Variable Initialization
     double gammaCos; double gamma;
     
     //Function Body
     if (pi < phi < 2*pi){
-        gammaCos = (muz2*cos(theta) - muz1) / sqrt((1 - cos(theta) * cos(theta)) * (1 - muz2 * muz2));
+        gammaCos = (muz1 - muz2*cos(theta)) / sin(theta) * sqrt((1 - muz2 * muz2));
     }
     else{
-        gammaCos = (muz2*cos(theta) - muz1) / (-1 * sqrt((1-cos(theta)*cos(theta)) * (1 - muz2 * muz2)));
+        gammaCos = (muz1 - muz2*cos(theta)) / (-1 * sin(theta)) * sqrt((1 - muz2 * muz2));
         
     }
-    //gamma = acos(gammaCos);
+    gamma = acos(gammaCos);
     
     return gammaCos;
 }
