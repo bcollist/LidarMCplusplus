@@ -67,7 +67,7 @@ int main (){
     double r;   // photon pathlength variable
     double theta; // off-axis scattering angle
     double phi; // scattering angle around the azimuth; if vector is coming at you, this is a counterclockwise rotation
-    
+    double gamma; // rotation angle back into photon frame of reference
     // Polarization
     mat stokes; mat mueller;
    
@@ -108,7 +108,7 @@ int main (){
     //nPhotons = 10000 // number of photons to trace
     //Photons = 100000 // number of photons to trace
     //nPhotons = 1000000 // number of photons to trace
-    int nPhotons = 10000000; // number of photons to trace
+    int nPhotons = 100000; // number of photons to trace
 
     // Predefined Working Variables
     mt19937::result_type seed = chrono::high_resolution_clock::now().time_since_epoch().count(); // seed the random number generator
@@ -166,9 +166,11 @@ int main (){
                     
                     // Did the photon hit the detector within the FOV?
                     if(anglei <= FOV){      // yes, if the intersection angle is less than the 1/2 angle FOV
-                        rTotal = rTotal - (r-(fd *r )); // calculate the distance; validate this again
+                        rTotal = rTotal - (r-(fd *r )); // calculate the distance;
                         signalWeight.push_back(pow(omega,nScat)); // append photon weight (omega^n) to signal weight vector
                         distance.push_back(rTotal); // append the total distance travelled by the photon to the distance vector
+                        cout << stokes << endl;
+
                     }
                 }
             }
@@ -179,8 +181,17 @@ int main (){
                     mux2 = updateDirCosX(theta, phi, mux1, muy1, muz1); // update the photon X direction cosine
                     muy2 = updateDirCosY(theta, phi, mux1, muy1, muz1); // update the photon Y direction cosine
                     muz2 = updateDirCosZ(theta, phi, mux1, muy1, muz1); // update the photon Z direction cosine
-                    //gammaCalc(muz1, muz2, theta, phi)
-                
+                    
+                    // Update Polarization Variables
+                    gamma = gammaCalc(muz1, muz2, theta, phi); // update reference frame rotation angle
+                   
+                    mueller << 1 << (-sin(theta)*sin(theta)) / (1 + cos(theta) * cos(theta)) << 0 << 0 << endr
+                            << (-sin(theta)*sin(theta)) / (1 + cos(theta) * cos(theta)) << 1 << 0 << 0 << endr
+                            << 0 << 0 << 2*cos(theta) / (1+cos(theta)*cos(theta)) << 0 << endr
+                            << 0 << 0 << 0 << 2*cos(theta) / (1+cos(theta)*cos(theta)) << endr;
+                    stokes = updateStokes(stokes, mueller, phi, gamma);
+                    
+                    
                     // reset position variables
                     x1 = x2;
                     y1 = y2;
@@ -380,8 +391,13 @@ mat updateStokes(mat stokes, mat mueller, double phi, double gamma){
                  << 0 << (-1*sin(-2*gamma)) << (cos(-2*gamma)) << 0 << endr
                  << 0 << 0 << 0 << 1 << endr;
     
-    stokesPrime = (rotationOut * mueller) * rotationIn * stokes;
+    stokesPrime = rotationOut * mueller * rotationIn * stokes;
     
+    stokesPrime[1] = stokesPrime[1] / stokesPrime[0];
+    stokesPrime[2] = stokesPrime[2] / stokesPrime[0];
+    stokesPrime[3] = stokesPrime[3] / stokesPrime[0];
+    stokesPrime[0] = 1.0;
+
     return stokesPrime;
 }
 
@@ -390,7 +406,7 @@ double gammaCalc(double muz1, double muz2, double theta, double phi){
     // Calculates the angle of rotation back into the new photon coordinate space using sperical trig cosine identity
     //cosa = cos(b)cos(c) + sin(b)sin(c)cos(A)
     // set the unknown angle to be A, rearrange, and solve
-    // See http://mathworld.wolfram.com/SphericalTrigonometry.html for more detailsif you need some visual help
+    // See http://mathworld.wolfram.com/SphericalTrigonometry.html for more details if you need some visual help
     
     // Variable Initialization
     double gammaCos; double gamma;
@@ -405,8 +421,9 @@ double gammaCalc(double muz1, double muz2, double theta, double phi){
     }
     gamma = acos(gammaCos);
     
-    return gammaCos;
+    return gamma;
 }
+
 
 
 // // Generate a random number array of size (x) with values from 0-1
