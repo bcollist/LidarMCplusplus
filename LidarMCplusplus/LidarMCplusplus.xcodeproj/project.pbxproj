@@ -25,7 +25,6 @@
 
 /* Begin PBXFileReference section */
 		D34CA9DF1FF985F700282F40 /* LidarMCplusplus */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = LidarMCplusplus; sourceTree = BUILT_PRODUCTS_DIR; };
-		D39E4BC21FE97AA400DF3926 /* compiling_error.txt */ = {isa = PBXFileReference; lastKnownFileType = text; name = compiling_error.txt; path = ../compiling_error.txt; sourceTree = "<group>"; };
 		D39E4BC31FE97AC300DF3926 /* LICENSE */ = {isa = PBXFileReference; lastKnownFileType = text; name = LICENSE; path = ../LICENSE; sourceTree = "<group>"; };
 		D39E4BC41FE97ACA00DF3926 /* LidarMC++.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = "LidarMC++.cpp"; path = "../LidarMC++.cpp"; sourceTree = "<group>"; };
 		D39E4BC61FE97AD500DF3926 /* spline.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = spline.h; path = ../spline.h; sourceTree = "<group>"; };
@@ -48,7 +47,6 @@
 		D39E4BAF1FE97A2200DF3926 = {
 			isa = PBXGroup;
 			children = (
-				D39E4BC21FE97AA400DF3926 /* compiling_error.txt */,
 				D39E4BC31FE97AC300DF3926 /* LICENSE */,
 				D39E4BC41FE97ACA00DF3926 /* LidarMC++.cpp */,
 				D39E4BC61FE97AD500DF3926 /* spline.h */,
@@ -229,6 +227,11 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 10.13;
 				MTL_ENABLE_DEBUG_INFO = NO;
+				"OTHER_CPLUSPLUSFLAGS[arch=*]" = (
+					"$(OTHER_CFLAGS)",
+					"-O2",
+					"-fopenmp=libomp",
+				);
 				SDKROOT = macosx;
 			};
 			name = Release;

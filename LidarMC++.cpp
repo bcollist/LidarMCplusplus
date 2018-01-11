@@ -68,16 +68,26 @@ int main (){
     double theta; // off-axis scattering angle
     double phi; // scattering angle around the azimuth; if vector is coming at you, this is a counterclockwise rotation
     double gamma; // rotation angle back into photon frame of reference
+    double detectAngle; // rotation angle back into the detector reference frame
+    
     // Polarization
     mat stokes; mat mueller;
+    mat stokesDetect; mat rotationDetector; //stokes vector of detected photon & rotation matrix to translate to detector reference frame
+    
    
     // Signal Variables
     double dBin; // a varible describing the width of each signal bin
     double max; // maximum distance traveled by a photon
     double bd; // temporary variable use to hold the value of distance while binning the signal
+    double coPol; // temporary variable used to hold the co-polarized value
+    double crossPol; // temporary variable used to hold the cross-polarized value
+    
     vector<double> binEdges; // upper edges of signal bins
     vector<double> signalWeight; // a variable used to hold the weight of each photon reaching the detector
     vector<double> distance; // distance associated with each signal bin
+    vector<double> signalCO; // distance associated with each signal bin
+    vector<double> signalCROSS; // distance associated with each signal bin
+
     
     // VSF Probability
     static const double thetaArray[]={0.1,0.12589,0.15849,0.19953,0.25119,0.31623,0.39811,0.50119,0.63096,0.79433,1.0,1.2589,
@@ -134,7 +144,7 @@ int main (){
         
         // Polarization
         stokes << 1 << endr     // initialize vertically polarized photon
-               << 1 << endr
+               << -1 << endr
                << 0 << endr
                << 0 << endr;
         
@@ -166,11 +176,31 @@ int main (){
                     
                     // Did the photon hit the detector within the FOV?
                     if(anglei <= FOV){      // yes, if the intersection angle is less than the 1/2 angle FOV
+                        
+                        // Rotate back into the detector's reference frame
+                        detectAngle = atan2(muy2,mux2);
+                        
+                        // Create unpolarized signal
                         rTotal = rTotal - (r-(fd *r )); // calculate the distance;
                         signalWeight.push_back(pow(omega,nScat)); // append photon weight (omega^n) to signal weight vector
                         distance.push_back(rTotal); // append the total distance travelled by the photon to the distance vector
-                        cout << stokes << endl;
+                        
+                        // Create polarized signal
 
+                        detectAngle = atan2(muy2,mux2); // angle of rotation into detector's reference frame
+                        
+                        rotationDetector  << 1 << 0 << 0 << 0 << endr // Rotates the photon into detector reference frame
+                                          << 0 << (cos(-2*detectAngle)) << (sin(-2*detectAngle)) << 0 << endr
+                                          << 0 << (-1*sin(-2*detectAngle)) << (cos(-2*detectAngle)) << 0 << endr
+                                          << 0 << 0 << 0 << 1 << endr;
+                        
+                        stokesDetect = rotationDetector * stokes; // rotate stokes vector into the referecne plane of detector
+                        
+                        coPol = (0.5 * stokesDetect[0] - 0.5 * stokesDetect[1]) * pow(omega,nScat);
+                        crossPol = (0.5 * stokesDetect[0] + 0.5 * stokesDetect[1]) * pow(omega,nScat);
+                        
+                        signalCO.push_back(coPol);
+                        signalCROSS.push_back(crossPol);
                     }
                 }
             }
@@ -184,13 +214,12 @@ int main (){
                     
                     // Update Polarization Variables
                     gamma = gammaCalc(muz1, muz2, theta, phi); // update reference frame rotation angle
-                   
+                
                     mueller << 1 << (-sin(theta)*sin(theta)) / (1 + cos(theta) * cos(theta)) << 0 << 0 << endr
                             << (-sin(theta)*sin(theta)) / (1 + cos(theta) * cos(theta)) << 1 << 0 << 0 << endr
                             << 0 << 0 << 2*cos(theta) / (1+cos(theta)*cos(theta)) << 0 << endr
                             << 0 << 0 << 0 << 2*cos(theta) / (1+cos(theta)*cos(theta)) << endr;
                     stokes = updateStokes(stokes, mueller, phi, gamma);
-                    
                     
                     // reset position variables
                     x1 = x2;
