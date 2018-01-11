@@ -85,9 +85,8 @@ int main (){
     vector<double> binEdges; // upper edges of signal bins
     vector<double> signalWeight; // a variable used to hold the weight of each photon reaching the detector
     vector<double> distance; // distance associated with each signal bin
-    vector<double> signalCO; // distance associated with each signal bin
-    vector<double> signalCROSS; // distance associated with each signal bin
-
+    vector<double> signalCOweight; // distance associated with each signal bin
+    vector<double> signalCROSSweight; // distance associated with each signal bin
     
     // VSF Probability
     static const double thetaArray[]={0.1,0.12589,0.15849,0.19953,0.25119,0.31623,0.39811,0.50119,0.63096,0.79433,1.0,1.2589,
@@ -118,7 +117,7 @@ int main (){
     //nPhotons = 10000 // number of photons to trace
     //Photons = 100000 // number of photons to trace
     //nPhotons = 1000000 // number of photons to trace
-    int nPhotons = 100000; // number of photons to trace
+    int nPhotons = 1000000; // number of photons to trace
 
     // Predefined Working Variables
     mt19937::result_type seed = chrono::high_resolution_clock::now().time_since_epoch().count(); // seed the random number generator
@@ -144,8 +143,8 @@ int main (){
         
         // Polarization
         stokes << 1 << endr     // initialize vertically polarized photon
-               << -1 << endr
                << 0 << endr
+               << 1 << endr
                << 0 << endr;
         
         while (status == 1 && nScat < 10) {   // while the photon is still alive.....
@@ -199,8 +198,8 @@ int main (){
                         coPol = (0.5 * stokesDetect[0] - 0.5 * stokesDetect[1]) * pow(omega,nScat);
                         crossPol = (0.5 * stokesDetect[0] + 0.5 * stokesDetect[1]) * pow(omega,nScat);
                         
-                        signalCO.push_back(coPol);
-                        signalCROSS.push_back(crossPol);
+                        signalCOweight.push_back(coPol);
+                        signalCROSSweight.push_back(crossPol);
                     }
                 }
             }
@@ -245,10 +244,14 @@ int main (){
     }
     
     vector <double> signal(binEdges.size(),0.0); // initialize the final signal vector based off of the size of the distance bins vector
+    vector <double> signalCO(binEdges.size(),0.0); // initialize the final signal vector based off of the size of the distance bins vector
+    vector <double> signalCROSS(binEdges.size(),0.0); // initialize the final signal vector based off of the size of the distance bins vector
     
     for (int i=0; i<distance.size(); i++){  //loop through each element of the distance bin......
         bd = (ceil(distance[i]/dBin)*dBin); //.....find the value of the distance bin that the photon belongs to.....
         signal.at(int(bd/0.25)-1) = signal[(int(bd/0.25)-1)] + signalWeight[i]; //...add the value of the photon weight to the signal variable at the correct index for its distance bin
+        signalCO.at(int(bd/0.25)-1) = signalCO[(int(bd/0.25)-1)] + signalCOweight[i]; //...add the value of the photon weight to the signal variable at the correct index for its distance bin
+        signalCROSS.at(int(bd/0.25)-1) = signalCROSS[(int(bd/0.25)-1)] + signalCROSSweight[i]; //...add the value of the photon weight to the signal variable at the correct index for its distance bin
     }
 
     ofstream myfile;
@@ -277,12 +280,16 @@ int main (){
     myfile << "# of photons = \n";
     myfile << nPhotons;
     myfile << "\n";
-    myfile << "distance,signal\n";
+    myfile << "distance,signal,co,cross\n";
     // Write Signal
     for (int j=0; j<(signal.size()+1); j++){
         myfile << binEdges[j]/2;
         myfile << ",";
         myfile << signal[j];
+        myfile << ",";
+        myfile << signalCO[j];
+        myfile << ",";
+        myfile << signalCROSS[j];
         myfile << "\n";
     }
         
