@@ -143,8 +143,8 @@ int main (){
         
         // Polarization
         stokes << 1 << endr     // initialize vertically polarized photon
+               << -1 << endr
                << 0 << endr
-               << 1 << endr
                << 0 << endr;
         
         while (status == 1 && nScat < 10) {   // while the photon is still alive.....
@@ -177,20 +177,17 @@ int main (){
                     if(anglei <= FOV){      // yes, if the intersection angle is less than the 1/2 angle FOV
                         
                         // Rotate back into the detector's reference frame
-                        detectAngle = atan2(muy2,mux2);
+                        detectAngle = atan2(mux1,muy1);
                         
                         // Create unpolarized signal
                         rTotal = rTotal - (r-(fd *r )); // calculate the distance;
                         signalWeight.push_back(pow(omega,nScat)); // append photon weight (omega^n) to signal weight vector
                         distance.push_back(rTotal); // append the total distance travelled by the photon to the distance vector
                         
-                        // Create polarized signal
-
-                        detectAngle = atan2(muy2,mux2); // angle of rotation into detector's reference frame
-                        
+                        // Create polarized signal                        
                         rotationDetector  << 1 << 0 << 0 << 0 << endr // Rotates the photon into detector reference frame
-                                          << 0 << (cos(-2*detectAngle)) << (sin(-2*detectAngle)) << 0 << endr
-                                          << 0 << (-1*sin(-2*detectAngle)) << (cos(-2*detectAngle)) << 0 << endr
+                                          << 0 << (cos(2*detectAngle)) << (sin(2*detectAngle)) << 0 << endr
+                                          << 0 << (-1*sin(2*detectAngle)) << (cos(2*detectAngle)) << 0 << endr
                                           << 0 << 0 << 0 << 1 << endr;
                         
                         stokesDetect = rotationDetector * stokes; // rotate stokes vector into the referecne plane of detector
@@ -218,8 +215,13 @@ int main (){
                             << (-sin(theta)*sin(theta)) / (1 + cos(theta) * cos(theta)) << 1 << 0 << 0 << endr
                             << 0 << 0 << 2*cos(theta) / (1+cos(theta)*cos(theta)) << 0 << endr
                             << 0 << 0 << 0 << 2*cos(theta) / (1+cos(theta)*cos(theta)) << endr;
+
+//                    mueller << 1 << -1 << 0 << 0 << endr
+//                            << -1 << 1 << 0 << 0 << endr
+//                            << 0 << 0 << 0 << 0 << endr
+//                            << 0 << 0 << 0 << 0 << endr;
+
                     stokes = updateStokes(stokes, mueller, phi, gamma);
-                    
                     // reset position variables
                     x1 = x2;
                     y1 = y2;
@@ -419,20 +421,22 @@ mat updateStokes(mat stokes, mat mueller, double phi, double gamma){
     //Function Body
     rotationIn  << 1 << 0 << 0 << 0 << endr // Rotates the photon counterclockwise (if photon is coming at you) by angle phi into the scattering plane
                 << 0 << (cos(-2*phi)) << (sin(-2*phi)) << 0 << endr
-                << 0 << (-1*sin(-2*phi)) << (cos(-2*phi)) << 0 << endr
+                << 0 << (-sin(-2*phi)) << (cos(-2*phi)) << 0 << endr
                 << 0 << 0 << 0 << 1 << endr;
     
     rotationOut  << 1 << 0 << 0 << 0 << endr // Rotates the photon counterclockwise (if photon is coming at you) by angle gamma into the new scattering plane
                  << 0 << (cos(-2*gamma)) << (sin(-2*gamma)) << 0 << endr
-                 << 0 << (-1*sin(-2*gamma)) << (cos(-2*gamma)) << 0 << endr
+                 << 0 << (-sin(-2*gamma)) << (cos(-2*gamma)) << 0 << endr
                  << 0 << 0 << 0 << 1 << endr;
     
     stokesPrime = rotationOut * mueller * rotationIn * stokes;
     
+
     stokesPrime[1] = stokesPrime[1] / stokesPrime[0];
     stokesPrime[2] = stokesPrime[2] / stokesPrime[0];
     stokesPrime[3] = stokesPrime[3] / stokesPrime[0];
     stokesPrime[0] = 1.0;
+    
 
     return stokesPrime;
 }
@@ -448,6 +452,7 @@ double gammaCalc(double muz1, double muz2, double theta, double phi){
     double gammaCos; double gamma;
     
     //Function Body
+    
     if (pi < phi < 2*pi){
         gammaCos = (muz1 - muz2*cos(theta)) / sin(theta) * sqrt((1 - muz2 * muz2));
     }
