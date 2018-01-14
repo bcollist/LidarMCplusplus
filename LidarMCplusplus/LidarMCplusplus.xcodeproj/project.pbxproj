@@ -230,7 +230,7 @@
 				"OTHER_CPLUSPLUSFLAGS[arch=*]" = (
 					"$(OTHER_CFLAGS)",
 					"-O2",
-					"-fopenmp=libomp",
+					"-fopenmp=omp",
 				);
 				SDKROOT = macosx;
 			};

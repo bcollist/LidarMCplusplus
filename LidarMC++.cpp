@@ -55,7 +55,7 @@ int main (){
     double anglei; // angle of intersection between photon and detector plane
 
     // Define water column IOPs
-    double a = 0.05; //absorption coefficient (m^-^1)
+    double a = 0.4; //absorption coefficient (m^-^1)
     double b = 0.5; //scattering coefficient (m^-^1)
     double c = a + b; //bema attenuation coefficient (m^-^1)
     double omega = b/c; // single scattering albedo
@@ -117,7 +117,7 @@ int main (){
     //nPhotons = 10000 // number of photons to trace
     //Photons = 100000 // number of photons to trace
     //nPhotons = 1000000 // number of photons to trace
-    int nPhotons = 100000000; // number of photons to trace
+    int nPhotons = 1000000; // number of photons to trace
 
     // Predefined Working Variables
     mt19937::result_type seed = chrono::high_resolution_clock::now().time_since_epoch().count(); // seed the random number generator
@@ -140,7 +140,9 @@ int main (){
         int status = 1; // status variable 1 = alive 0 = DEAD
         double rTotal = 0; // total pathlength variable
         double nScat = 0; // number of scattering events so far
-        
+        double weight = 1; // weight of a photon
+        double threshold = 0.1; // 1/10 photons will survive the roulette sequence
+       
         // Polarization
         stokes << 1 << endr     // initialize vertically polarized photon
                << -1 << endr
@@ -234,7 +236,23 @@ int main (){
                     //cout << mux1*mux1 + muy1*muy1 + muz1*muz1 << endl;
 
                     nScat = nScat+1; // update the number of scattering events
+                    
+                    // Update Photon Weight
+                    nScat = nScat+1; // update the number of scattering events
+                    weight = weight * omega; // update weight variable
+                    
+                    // Photon Termination Roulette - allows for conservation of energy with unbiased photon termination //
+                    
+                    if (weight < 0.01){ // unbiased roulette termination
+                        if (rand() < threshold){
+                            weight = weight * threshold;
+                        }
+                        else {
+                            status = 0;
+                        }
                     }
+                    
+                }
             
         }
     }
