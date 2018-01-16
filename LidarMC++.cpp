@@ -186,16 +186,18 @@ int main (){
                         signalWeight.push_back(pow(omega,nScat)); // append photon weight (omega^n) to signal weight vector
                         distance.push_back(rTotal); // append the total distance travelled by the photon to the distance vector
                         
-                        // Create polarized signal                        
-                        rotationDetector  << 1 << 0 << 0 << 0 << endr // Rotates the photon into detector reference frame
+                        // Create polarized signal
+                        
+                        // rotate into the detector reference frame
+                        rotationDetector  << 1 << 0 << 0 << 0 << endr
                                           << 0 << (cos(2*detectAngle)) << (sin(2*detectAngle)) << 0 << endr
                                           << 0 << (-1*sin(2*detectAngle)) << (cos(2*detectAngle)) << 0 << endr
                                           << 0 << 0 << 0 << 1 << endr;
                         
-                        stokesDetect = rotationDetector * stokes; // rotate stokes vector into the referecne plane of detector
+                        stokesDetect = rotationDetector * stokes; // rotate stokes vector into the referecne frame of detector
                         
-                        coPol = (0.5 * stokesDetect[0] - 0.5 * stokesDetect[1]) * pow(omega,nScat);
-                        crossPol = (0.5 * stokesDetect[0] + 0.5 * stokesDetect[1]) * pow(omega,nScat);
+                        coPol = (0.5 * stokesDetect[0] - 0.5 * stokesDetect[1]) * weight;
+                        crossPol = (0.5 * stokesDetect[0] + 0.5 * stokesDetect[1]) * weight;
                         
                         signalCOweight.push_back(coPol);
                         signalCROSSweight.push_back(crossPol);
