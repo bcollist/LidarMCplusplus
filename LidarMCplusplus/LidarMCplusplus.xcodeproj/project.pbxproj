@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		D349F0E3201103E6005DAA4E /* bhmie.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D349F0E2201103E6005DAA4E /* bhmie.cpp */; };
 		D39E4BC51FE97ACA00DF3926 /* LidarMC++.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D39E4BC41FE97ACA00DF3926 /* LidarMC++.cpp */; };
 		D39E4BCC1FE9807E00DF3926 /* libarmadillo.8.30.2.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = D39E4BCB1FE9807E00DF3926 /* libarmadillo.8.30.2.dylib */; };
 /* End PBXBuildFile section */
@@ -24,7 +25,8 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		D34CA9DF1FF985F700282F40 /* LidarMCplusplus */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = LidarMCplusplus; sourceTree = BUILT_PRODUCTS_DIR; };
+		D349F0E2201103E6005DAA4E /* bhmie.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = bhmie.cpp; sourceTree = "<group>"; };
+		D34CA9DF1FF985F700282F40 /* LidarMCplusplus */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; name = LidarMCplusplus; path = "/Users/Brian/Documents/C++/LidarMCplusplus/LidarMCplusplus/build/Debug/LidarMCplusplus"; sourceTree = "<absolute>"; };
 		D39E4BC31FE97AC300DF3926 /* LICENSE */ = {isa = PBXFileReference; lastKnownFileType = text; name = LICENSE; path = ../LICENSE; sourceTree = "<group>"; };
 		D39E4BC41FE97ACA00DF3926 /* LidarMC++.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = "LidarMC++.cpp"; path = "../LidarMC++.cpp"; sourceTree = "<group>"; };
 		D39E4BC61FE97AD500DF3926 /* spline.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = spline.h; path = ../spline.h; sourceTree = "<group>"; };
@@ -52,7 +54,7 @@
 				D39E4BC61FE97AD500DF3926 /* spline.h */,
 				D39E4BC71FE97ADB00DF3926 /* README.md */,
 				D39E4BCA1FE9807D00DF3926 /* Frameworks */,
-				D34CA9DF1FF985F700282F40 /* LidarMCplusplus */,
+				D349F0E2201103E6005DAA4E /* bhmie.cpp */,
 			);
 			sourceTree = "<group>";
 		};
@@ -122,6 +124,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				D39E4BC51FE97ACA00DF3926 /* LidarMC++.cpp in Sources */,
+				D349F0E3201103E6005DAA4E /* bhmie.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
