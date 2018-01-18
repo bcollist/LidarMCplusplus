@@ -178,17 +178,15 @@ int main (){
                     // Did the photon hit the detector within the FOV?
                     if(anglei <= FOV){      // yes, if the intersection angle is less than the 1/2 angle FOV
                         
-                        // Rotate back into the detector's reference frame
-                        detectAngle = atan2(mux1,muy1);
                         
                         // Create unpolarized signal
                         rTotal = rTotal - (r-(fd *r )); // calculate the distance;
-                        signalWeight.push_back(pow(omega,nScat)); // append photon weight (omega^n) to signal weight vector
+                        signalWeight.push_back(weight); // append photon weight (omega^n) to signal weight vector
                         distance.push_back(rTotal); // append the total distance travelled by the photon to the distance vector
-                        
                         // Create polarized signal
                         
                         // rotate into the detector reference frame
+                        detectAngle = atan2(mux1,muy1);
                         rotationDetector  << 1 << 0 << 0 << 0 << endr
                                           << 0 << (cos(2*detectAngle)) << (sin(2*detectAngle)) << 0 << endr
                                           << 0 << (-1*sin(2*detectAngle)) << (cos(2*detectAngle)) << 0 << endr
@@ -220,6 +218,8 @@ int main (){
                             << 0 << 0 << 2*cos(theta) / (1+cos(theta)*cos(theta)) << 0 << endr
                             << 0 << 0 << 0 << 2*cos(theta) / (1+cos(theta)*cos(theta)) << endr;
 
+
+                    
 //                    mueller << 1 << -1 << 0 << 0 << endr
 //                            << -1 << 1 << 0 << 0 << endr
 //                            << 0 << 0 << 0 << 0 << endr
