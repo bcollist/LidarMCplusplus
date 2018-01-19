@@ -9,12 +9,14 @@
 #include <vector>
 #include <armadillo>
 #include "spline.h" // https://github.com/ttk592/spline/
+#include <complex>
 
 using namespace std;
 using namespace arma;
 
 // Global Variables
 double pi = 3.1415926535897932384626433832795028841971693993751058209749445923078164062;
+complex <double> imaginary = sqrt(complex<double>(-1,0));
 
 /////////////////////// Function Prototypes ////////////////////////////
 
@@ -36,6 +38,9 @@ double intersectionPointY(double x1,double y1,double z1,double x2,double y2,doub
 // Mueller Matrix Math
 mat updateStokes(mat stokes, mat mueller, double phi, double gamma); // update photon stokes vector
 double gammaCalc(double muz1, double muz2, double theta, double phi); // calculate the rotation angle
+
+// Mie Calculations
+int bhmie(double x,double refrel,int nang);
 
 // main function
 int main (){
@@ -60,6 +65,7 @@ int main (){
     double c = a + b; //bema attenuation coefficient (m^-^1)
     double omega = b/c; // single scattering albedo
     
+    // Define Mie Parameters
     
     // Photon Tracking and Position Variables
     double xT; double yT; // variable used to describe the x and y location where a photon intersects the detector plane
@@ -403,6 +409,7 @@ double intersectionAngle(double x1,double y1,double z1,double x2,double y2,doubl
   return angle;
 }
 
+// Determine the x location on the detector plane that the photon intersects
 double intersectionPointX(double x1, double y1, double z1, double x2, double y2, double z2){
 // Find the point of intersection between a line and the plane occupied by the detector (ie. the plane created by the x and y axis
 // Parametric equation for a line r(t) = <x1,y1,z1> + t<x2-x1, y2-y1, z2-z1>
@@ -419,6 +426,7 @@ double intersectionPointX(double x1, double y1, double z1, double x2, double y2,
     return xi;
 }
 
+//Determine the Y location on the detector plane that the photon intersects
 double intersectionPointY(double x1, double y1, double z1, double x2, double y2, double z2){
 // Find the point of intersection between a line and the plane occupied by the detector (ie. the plane created by the x and y axis
 // Parametric equation for a line r(t) = <x1,y1,z1> + t<x2-x1, y2-y1, z2-z1>
@@ -434,6 +442,8 @@ double intersectionPointY(double x1, double y1, double z1, double x2, double y2,
     
     return yi;
 }
+
+// Update the Stokes vector
 mat updateStokes(mat stokes, mat mueller, double phi, double gamma){
     // Variable Initialization
     mat rotationIn; mat rotationOut; mat stokesPrime;
@@ -461,6 +471,7 @@ mat updateStokes(mat stokes, mat mueller, double phi, double gamma){
     return stokesPrime;
 }
 
+// Calculate the rotation angle into the new reference frame of the photon
 double gammaCalc(double muz1, double muz2, double theta, double phi){
     
     // Calculates the angle of rotation back into the new photon coordinate space using sperical trig cosine identity
@@ -484,6 +495,131 @@ double gammaCalc(double muz1, double muz2, double theta, double phi){
     
     return gamma;
 }
+
+// Mie Calculations translated from Bohren and Huffman 1998
+int bhmie(double x,double refrel,int nang){
+    
+    // Variable Definitions
+    complex<double> y; double dx; double nstop; double ymod; int nmx; double dang; double theta;
+    int nn;
+    double RN; double DN; double FN;
+    complex<double> AN; complex<double> BN;
+    double PSI; double PSI0; double PSI1;
+    double CHI; double CHI0; double CHI1;
+    double APSI; double APSI0; double APSI1;
+    complex <double> XI; complex <double> XI0; complex <double> XI1;
+    double Qscat; double Qext; double Qback;
+    double P; double T;
+    
+    
+    // Array Definitions
+    double PI[nang+1]; double PI0[nang+1]; double PI1[nang+1];
+    complex<double> S1[2*nang]; complex<double> S2[2*nang];
+    
+    double AMU[nang+1]; double TAU[nang+1];
+    
+    
+    dx = x;
+    y = x * refrel;
+    
+    nstop = ceil(x + 4 * pow(x,0.3333) +2);
+    ymod = abs(y);
+    nmx = max(nstop,ceil(ymod))+15;
+    complex<double> D[nmx];
+    dang = pi/2/(nang-1);
+    
+    
+    for (int i = 1; i<=nang; i++){
+        theta = (double)(i-1) * dang;
+        AMU[i] =  cos(theta);
+    }
+    
+    //Logarithmic derivative D(j) calculated by downward recurence
+    D[nmx]= complex <double>(0,0);
+    nn = nmx-1;
+    
+    for (int n = 1; n<=nn; n++){
+        RN = nmx-n+1;
+        D[nmx-n]=(RN/y)-(1.0/(D[nmx-n+1]+RN/y));
+    }
+    
+    for (int j = 1; j <= nang; j++){
+        PI0[j] = 0.0;
+        PI1[j] = 1.0;
+    }
+    
+    nn = 2*nang-1;
+    
+    for (int j = 1; j <= nang; j++){
+        S1[j] = 0.0;
+        S2[j] = 1.0;
+    }
+    
+    //Riccati-Bessel functins with real argument x calculated by upward recurence
+    PSI0=cos(dx);
+    PSI1=sin(dx);
+    CHI0=-sin(x);
+    CHI1=cos(x);
+    APSI0=PSI0;
+    APSI1=PSI1;
+    XI0=APSI0-CHI0*imaginary;
+    XI1=APSI1-CHI1*imaginary;
+    Qscat=0.0;
+    
+    int n=1;
+    while(n-1-nstop<0){
+        DN=n;
+        RN=n;
+        FN=(2*RN+1)/(RN*(RN+1));
+        PSI=(2*DN-1)*PSI1/dx-PSI0;
+        APSI=PSI;
+        CHI=(2*RN-1)*CHI1/x-CHI0;
+        XI=APSI-CHI*imaginary;
+        AN=((D[n]/refrel+RN/x)*APSI-APSI1)/((D[n]/refrel+RN/x)*XI-XI1);
+        BN=((refrel*D[n]+RN/x)*APSI-APSI1)/((D[n]*refrel+RN/x)*XI-XI1);
+        Qscat=Qscat+(2.0*RN+1.0)*(abs(AN)*abs(AN)+abs(BN)*abs(BN));
+        
+        
+        for (int j=1; j<=nang; j++){
+            int jj=2*nang-j;
+            PI[j]=PI1[j];
+            TAU[j]=RN*AMU[j]*PI[j]-(RN+1)*PI0[j];
+            P=pow(-1.0,(n-1));
+            S1[j]=S1[j]+FN*(AN*PI[j]+BN*TAU[j]);
+            T=pow((-1),n);
+            S2[j]=S2[j]+FN*(AN*TAU[j]+BN*PI[j]);
+            if(j != jj){
+                S1[jj]=S1[jj]+FN*(AN*PI[j]*P+BN*TAU[j]*T);
+                S2[jj]=S2[jj]+FN*(BN*PI[j]*P+AN*TAU[j]*T);
+                if (jj>180){
+                    cout << S1[180] << endl;
+                }
+                
+            }
+        }
+        
+        PSI0=PSI1;
+        PSI1=PSI;
+        APSI1=PSI1;
+        CHI0=CHI1;
+        CHI1=CHI;
+        XI1=APSI1-CHI1*imaginary;
+        n=n+1;
+        RN=n;
+        for (int j=1; j<=nang; j++){
+            PI1[j]=((2*RN-1)/(RN-1))*AMU[j]*PI[j]-RN*PI0[j]/(RN-1);
+            PI0[j]=PI[j];
+        }
+    }
+    Qscat=(2.0/(x*x))*Qscat;
+    Qext=(4.0/(x*x))*real(S1[1]);
+    //Note: Qback is not Qbb, but the radar back scattering.
+    Qback=(4.0/(x*x))*(abs(S1[2*nang-1])*abs(S1[2*nang-1]));
+    //cout << "Qext = " << Qext << endl;
+    
+    return 0;
+}
+
 
 
 
