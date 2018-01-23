@@ -12,7 +12,6 @@
 #include <complex>
 
 using namespace std;
-//using namespace arma;
 
 // Global Variables
 double pi = 3.1415926535897932384626433832795028841971693993751058209749445923078164062;
@@ -183,6 +182,7 @@ int main (){
     s34bar[i] = (1.0/(kMed*kMed))*trapz(sizeParam,integrandArray34,diamBin);
     }
 
+
     // Photon Tracking and Position Variables //
     double xT; double yT; // variable used to describe the x and y location where a photon intersects the detector plane
     double hitRad; // radial distance away from detector center that photon crosses detector plane
@@ -210,36 +210,17 @@ int main (){
     vector<double> signalCOweight; // distance associated with each signal bin
     vector<double> signalCROSSweight; // distance associated with each signal bin
 
-    // VSF Probability
-    static const double thetaArray[]={0.1,0.12589,0.15849,0.19953,0.25119,0.31623,0.39811,0.50119,0.63096,0.79433,1.0,1.2589,
-        1.5849,1.9953,2.5119,3.1623,3.9811,5.0119,6.3096,7.9433,10,15,20,25,30,35,40,45,50,
-        55,60,65,70,75,80,85,90,95,100,105,110,115,120,125,130,135,140,145,150,155,160,
-        165,170,175,180};
-    static const double pThetaArray[] = {0.043292475, 0.051470904, 0.061194794, 0.07278701,  0.086643078,
-        0.103058065, 0.122316295, 0.144714728, 0.170373413, 0.199273394,
-        0.23138308,  0.266595059, 0.304726101, 0.345302331, 0.387470778,
-        0.431035572, 0.475832438, 0.5216971,   0.568433689, 0.615808429,
-        0.663612814, 0.749541922, 0.806027674, 0.847981298, 0.877235105,
-        0.898464649, 0.915776837, 0.929298035, 0.940418273, 0.949074367,
-        0.956340431, 0.962153282, 0.967271119, 0.971314842, 0.975042649,
-        0.978012258, 0.9808555,   0.983003728, 0.985215139, 0.986857901,
-        0.988690213, 0.990017059, 0.991533455, 0.992607569, 0.993934416,
-        0.99481898 , 0.995893094, 0.996524926, 0.997472673, 0.997978139,
-        0.998736337, 0.999052252, 0.999620901, 0.999747267, 1.0};
-
-    vector<double> thetaVec (thetaArray, thetaArray + sizeof(thetaArray) / sizeof(thetaArray[0])); // vector containing angles between 0 and 180 that are used to define VSF
-    vector<double> pThetaVec (pThetaArray, pThetaArray + sizeof(pThetaArray) / sizeof(pThetaArray[0])); // vector containing the cumulative probability of scattering at angles defined above
-
-    // Initialize the spline interpolation function
-    tk::spline spl; // define the spline interpolation function
-    spl.set_points(pThetaVec,thetaVec); // set the x and y values the the spline interpolation will operate on
+    double I; double I0; int ithdeg;
+//    // Initialize the spline interpolation function
+//    tk::spline spl; // define the spline interpolation function
+//    spl.set_points(pThetaVec,thetaVec); // set the x and y values the the spline interpolation will operate on
 
     // Mont Carlo parameters
     //nPhotons = 1000 // number of photons to trace
     //nPhotons = 10000 // number of photons to trace
     //Photons = 100000 // number of photons to trace
     //nPhotons = 1000000 // number of photons to trace
-    int nPhotons = 1000000; // number of photons to trace
+    int nPhotons = 100000; // number of photons to trace
 
     // Predefined Working Variables
     mt19937::result_type seed = chrono::high_resolution_clock::now().time_since_epoch().count(); // seed the random number generator
@@ -325,8 +306,13 @@ int main (){
                 }
             }
                 else{
-                    theta = deg2Rad(spl(((double) rand() / (RAND_MAX)))); // generate a random scattering angle from the VSF
-                    phi = 2 * pi * ((double) rand() / (RAND_MAX));  // generate a
+                    do{
+                        theta = acos(2.0*((double) rand() / (RAND_MAX))-1);
+                        phi = rand()*2.0*pi;
+                        I0 = s11bar[0]*stokes[0]+s12bar[0]*(stokes[1]*cos(2*phi)+stokes[2]*sin(2*phi));
+                        ithdeg = floor(theta*nang1/pi);
+                        I = s11bar[ithdeg]*stokes[0]+s12bar[ithdeg]*(stokes[1]*cos(2*phi)+stokes[2]*sin(2*phi));
+                    }while(((double) rand() / (RAND_MAX))*I0>=I);
 
                     mux2 = updateDirCosX(theta, phi, mux1, muy1, muz1); // update the photon X direction cosine
                     muy2 = updateDirCosY(theta, phi, mux1, muy1, muz1); // update the photon Y direction cosine
@@ -339,15 +325,9 @@ int main (){
                             << (-sin(theta)*sin(theta)) / (1 + cos(theta) * cos(theta)) << 1 << 0 << 0 << arma::endr
                             << 0 << 0 << 2*cos(theta) / (1+cos(theta)*cos(theta)) << 0 << arma::endr
                             << 0 << 0 << 0 << 2*cos(theta) / (1+cos(theta)*cos(theta)) << arma::endr;
-
-
-
-//                    mueller << 1 << -1 << 0 << 0 << endr
-//                            << -1 << 1 << 0 << 0 << endr
-//                            << 0 << 0 << 0 << 0 << endr
-//                            << 0 << 0 << 0 << 0 << endr;
-
+                    
                     stokes = updateStokes(stokes, mueller, phi, gamma);
+                    
                     // reset position variables
                     x1 = x2;
                     y1 = y2;
@@ -443,10 +423,6 @@ return 0;
 
 
 
-
-
-
-
 ////////// Function Definitions ////////////
 
 // Convert Radians to Degrees
@@ -500,22 +476,23 @@ double updateDirCosZ(double theta, double phi, double mux, double muy, double mu
 
 // Determine the angle of intersection between the photon trajectory and the plane of the detector
 double intersectionAngle(double x1,double y1,double z1,double x2,double y2,double z2){
-// intersectionAngle(c1,c2) - Calculates the intersection angle between a photon trajectory and a vector normal to the plane of the detector
-// Validated against calculations performed by hand
-// In order to determine if a photon has entered the detector within the FOV of the detector, this function calculates the
-// angle between the unit vector normal to the detector plane and the propegation vector
-    arma::colvec c1; arma::colvec c2; arma::colvec u; arma::colvec v;
+    // intersectionAngle(c1,c2) - Calculates the intersection angle between a photon trajectory and a vector normal to the plane of the detector
+    // Validated against calculations performed by hand
+    // In order to determine if a photon has entered the detector within the FOV of the detector, this function calculates the
+    // angle between the unit vector normal to the detector plane and the propegation vector
+
+  arma::colvec c1; arma::colvec c2; arma::colvec u; arma::colvec v;
   double angle;
 
   c1   << x1 << arma::endr  // an array containing the first x,y,z points of the propegation vector
        << y1 << arma::endr  // vector declarations are made using c++94 style
        << z1 << arma::endr;
 
-  c2   << x2 << arma::endr // an array containing the first x,y,z points of the propegation vector
+  c2   << x2 << arma::endr  // an array containing the first x,y,z points of the propegation vector
        << y2 << arma::endr  // vector declarations are made using c++94 style
        << z2 << arma::endr; // an array containing the second x,y,z points of the propegation vector
 
-  u   <<  0 << arma::endr
+  u   <<  0  << arma::endr
       <<  0  << arma::endr
       << -1  << arma::endr;   // create a unit vector normal to the plane of the detector at the origin
 
@@ -758,30 +735,3 @@ double trapz(double x[], double y[], int size){
   s = 0.5*sTemp;
   return s;
 }
-
-
-
-
-// // Generate a random number array of size (x) with values from 0-1
-// double randArray(double r[], int arrayRow, int arrayCol){
-//
-//   // construct a random generator engine from a time-based seed:
-//   unsigned seed = chrono::system_clock::now().time_since_epoch().count(); // this seeds the random number generato differently for each itteration
-//
-//   default_random_engine generator (seed);  // this uses the default random generator in the <random> header file
-//
-//   uniform_real_distribution<double> distribution(0,1); // this distributes the random numbers to a uniform distribution
-//
-//   double r[arrayRow][arrayCol] = {{0}};
-//
-//   for (int i = 0; arrayRow-1; ++i){
-//         for(int j = 0; arrayCol; ++j){
-//                 double r[i][j] = {distribution(generator)};  // now generate the array of size (x) from the generator and distributor
-//         }
-//
-//   }
-//
-//
-//   return r;
-// }
-//
