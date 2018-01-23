@@ -12,7 +12,7 @@
 #include <complex>
 
 using namespace std;
-using namespace arma;
+//using namespace arma;
 
 // Global Variables
 double pi = 3.1415926535897932384626433832795028841971693993751058209749445923078164062;
@@ -36,20 +36,21 @@ double intersectionPointX(double x1,double y1,double z1,double x2,double y2,doub
 double intersectionPointY(double x1,double y1,double z1,double x2,double y2,double z2); // y location of intersection with detector plane
 
 // Mueller Matrix Math
-mat updateStokes(mat stokes, mat mueller, double phi, double gamma); // update photon stokes vector
+arma::mat updateStokes(arma::mat stokes, arma::mat mueller, double phi, double gamma); // update photon stokes vector
 double gammaCalc(double muz1, double muz2, double theta, double phi); // calculate the rotation angle
 
 // Mie Calculations
-int bhmie(double x,double refrel,int nang);
+int bhmie(double x,double refrel,int nang, double* Qscat_p, double* Qext_p, double* Qback_p, complex<double>* S1_p, complex<double>* S2_p, double* diffPoint);
+double trapz(double x[], double y[], int size);
 
 // main function
 int main (){
-    
+
     //////////////////////////// define constants //////////////////////////////////
 
     ////// Define Lidar Parameters//////
 
-    // Detector Size and FOV
+    // Detector Size and FOV //
     double detectorRad = 1.5e-1; // number of photons to trace
     //double scatLimit = 4; // number of scattering events to trace
     double FOV = deg2Rad(20); // half-angle FOV; enter in degrees -> converts to rad
@@ -59,15 +60,130 @@ int main (){
     double fd; // variable used in detector photon geometry colculations
     double anglei; // angle of intersection between photon and detector plane
 
-    // Define water column IOPs
+    // Define water column IOPs //
     double a = 0.4; //absorption coefficient (m^-^1)
     double b = 0.5; //scattering coefficient (m^-^1)
     double c = a + b; //bema attenuation coefficient (m^-^1)
     double omega = b/c; // single scattering albedo
-    
-    // Define Mie Parameters
-    
-    // Photon Tracking and Position Variables
+
+    // Define Mie Parameters //
+
+    // Refractive Index
+    double refMed = 1.33;
+    double refPart = 1.45;//(1.3, 0.008); // relative refractive index
+    double refRel = refPart/refMed;
+
+    // Wavelength
+    double lambda = 0.532; // lidar wavelength in a vaccuum (um)
+    double lambdaMed = lambda/refMed; // Lidar Wavelength in Medium (um)
+    double kMed = 2*pi/lambdaMed; // Lidar wavenumber in Medium;
+
+    // Angles
+    int nang = 91; // number of angles between 0-90
+    int nang1 = nang*2-1; // number of angles 0-180
+
+    // Particle Size Distribution Parameters
+
+    // Set PSD parameters
+    double Dmin = 0.1; // minimum particle diameter (um);
+    double Dmax = 150.0; // maximum particle diameter (um);
+    int diamBin = 100; // # of diameter bins;
+    double fac = pow((Dmax/Dmin),(1.0/(diamBin-1.0))); // exponential factor necessary for defining logarithmically spaced diameter bins
+
+    // Initialize Particle Size Arrays
+    double D[diamBin]; double radius[diamBin]; double sizeParam[diamBin];
+    double diffNumDistribution[diamBin];
+    double* diffPoint = &diffNumDistribution[0];
+
+    // Set PSD array values/Users/Brian/Documents/C++/LidarMCplusplus/LidarMC++.cpp
+
+    // Diameter Array
+    for (int i=0; i<diamBin; i++){ // generate an array of particle diameters
+      D[i]=Dmin*pow(fac,(i)); // define the diameter bins
+    }
+    // Radius Array
+    for (int i=0; i<diamBin; i++){ // generate an array of particle diameters
+      radius[i]=D[i]/2; // define the diameter bins
+    }
+    // Size Parameter Array
+    for (int i=0; i<diamBin; i++){ // generate an array of size parameters
+      sizeParam[i] = 2*pi*radius[i]*refMed / lambda; // mie theory size parameter
+    }
+
+    // Define Mie Output Variables and Pointers
+    double Qscat; double Qext; double Qback;  // Mie scattering efficiencies
+    double* Qscat_p = &Qscat; double* Qext_p = &Qext; double* Qback_p = &Qback; // pointers to Mie Scattering efficiencies
+
+    complex<double> S1[2*nang]; complex<double> S2[2*nang];
+    complex<double>* S1_p = S1; complex<double>* S2_p = S2;
+
+    // Mueller Matrix elements
+    double s11[2*nang-1][diamBin];
+    double s12[2*nang-1][diamBin];
+    double s33[2*nang-1][diamBin];
+    double s34[2*nang-1][diamBin];
+
+    double integrandS11[2*nang-1][diamBin];
+    double integrandS12[2*nang-1][diamBin];
+    double integrandS33[2*nang-1][diamBin];
+    double integrandS34[2*nang-1][diamBin];
+
+    double integrandArray11[diamBin];
+    double integrandArray12[diamBin];
+    double integrandArray33[diamBin];
+    double integrandArray34[diamBin];
+
+    double s11bar[2*nang-1];
+    double s12bar[2*nang-1];
+    double s33bar[2*nang-1];
+    double s34bar[2*nang-1];
+
+    // Define Distribution //
+    double k = 5E18; // differential number concentration at particle size D0
+
+    double jungeSlope = 4.0; // slope of the junge distribution
+
+    for (int i = 0; i<diamBin; i++){
+      diffNumDistribution[i] = k*pow((D[i]/D[0]),(-1*jungeSlope)); // # of particles m^-3 um^-1
+    }
+/////////////////// Bulk Mie Calculations /////////////////////
+    // Mie Calculations for Each Size Parameter in the distribution
+    //j+1 is used to convert from fortran indexing to c++indexing
+    for (int i = 0; i<diamBin; i++){
+      bhmie(sizeParam[i],refRel,nang,Qscat_p, Qext_p, Qback_p, S1_p, S2_p, diffPoint);
+
+      for (int j = 0; j<2*nang-1; j++){
+        s11[j][i] = 0.5 * (pow(abs(S2[j+1]),2) + pow(abs(S1[j+1]),2));
+        s12[j][i] = 0.5 * (pow(abs(S2[j+1]),2) - pow(abs(S1[j+1]),2));
+        s33[j][i] = real(S1[j+1]*conj(S2[j+1]));
+        s34[j][i] = imag(S2[j+1]*conj(S1[j+1]));
+      }
+    }
+
+    // Define integrand to calculate bulk mueller atrix properties
+    for (int i=0; i<diamBin; i++){
+      for (int j=0; j<2*nang-1; j++){
+        integrandS11[j][i] = diffNumDistribution[i] * s11[j][i]; // good
+        integrandS12[j][i] = diffNumDistribution[i] * s12[j][i]; // good
+        integrandS33[j][i] = diffNumDistribution[i] * s33[j][i]; // good
+        integrandS34[j][i] = diffNumDistribution[i] * s34[j][i]; // good
+    }
+    }
+
+    for (int i=0; i<2*nang-1; i++){
+      for (int j=0; j<diamBin; j++){
+        integrandArray11[j] = integrandS11[i][j];
+        integrandArray12[j] = integrandS12[i][j];
+        integrandArray33[j] = integrandS33[i][j];
+        integrandArray34[j] = integrandS34[i][j];
+      }
+    s11bar[i] = (1.0/(kMed*kMed))*trapz(sizeParam,integrandArray11,diamBin);
+    s12bar[i] = (1.0/(kMed*kMed))*trapz(sizeParam,integrandArray12,diamBin);
+    s33bar[i] = (1.0/(kMed*kMed))*trapz(sizeParam,integrandArray33,diamBin);
+    s34bar[i] = (1.0/(kMed*kMed))*trapz(sizeParam,integrandArray34,diamBin);
+    }
+
+    // Photon Tracking and Position Variables //
     double xT; double yT; // variable used to describe the x and y location where a photon intersects the detector plane
     double hitRad; // radial distance away from detector center that photon crosses detector plane
     double r;   // photon pathlength variable
@@ -75,25 +191,25 @@ int main (){
     double phi; // scattering angle around the azimuth; if vector is coming at you, this is a counterclockwise rotation
     double gamma; // rotation angle back into photon frame of reference
     double detectAngle; // rotation angle back into the detector reference frame
-    
+
     // Polarization
-    mat stokes; mat mueller;
-    mat stokesDetect; mat rotationDetector; //stokes vector of detected photon & rotation matrix to translate to detector reference frame
-    
-   
+    arma::mat stokes; arma::mat mueller;
+    arma::mat stokesDetect; arma::mat rotationDetector; //stokes vector of detected photon & rotation matrix to translate to detector reference frame
+
+
     // Signal Variables
     double dBin; // a varible describing the width of each signal bin
     double max; // maximum distance traveled by a photon
     double bd; // temporary variable use to hold the value of distance while binning the signal
     double coPol; // temporary variable used to hold the co-polarized value
     double crossPol; // temporary variable used to hold the cross-polarized value
-    
+
     vector<double> binEdges; // upper edges of signal bins
     vector<double> signalWeight; // a variable used to hold the weight of each photon reaching the detector
     vector<double> distance; // distance associated with each signal bin
     vector<double> signalCOweight; // distance associated with each signal bin
     vector<double> signalCROSSweight; // distance associated with each signal bin
-    
+
     // VSF Probability
     static const double thetaArray[]={0.1,0.12589,0.15849,0.19953,0.25119,0.31623,0.39811,0.50119,0.63096,0.79433,1.0,1.2589,
         1.5849,1.9953,2.5119,3.1623,3.9811,5.0119,6.3096,7.9433,10,15,20,25,30,35,40,45,50,
@@ -110,14 +226,14 @@ int main (){
         0.988690213, 0.990017059, 0.991533455, 0.992607569, 0.993934416,
         0.99481898 , 0.995893094, 0.996524926, 0.997472673, 0.997978139,
         0.998736337, 0.999052252, 0.999620901, 0.999747267, 1.0};
-    
+
     vector<double> thetaVec (thetaArray, thetaArray + sizeof(thetaArray) / sizeof(thetaArray[0])); // vector containing angles between 0 and 180 that are used to define VSF
     vector<double> pThetaVec (pThetaArray, pThetaArray + sizeof(pThetaArray) / sizeof(pThetaArray[0])); // vector containing the cumulative probability of scattering at angles defined above
 
     // Initialize the spline interpolation function
     tk::spline spl; // define the spline interpolation function
     spl.set_points(pThetaVec,thetaVec); // set the x and y values the the spline interpolation will operate on
-    
+
     // Mont Carlo parameters
     //nPhotons = 1000 // number of photons to trace
     //nPhotons = 10000 // number of photons to trace
@@ -148,17 +264,17 @@ int main (){
         double nScat = 0; // number of scattering events so far
         double weight = 1; // weight of a photon
         double threshold = 0.1; // 1/10 photons will survive the roulette sequence
-       
+
         // Polarization
-        stokes << 1 << endr     // initialize vertically polarized photon
-               << -1 << endr
-               << 0 << endr
-               << 0 << endr;
-        
+        stokes << 1 << arma::endr     // initialize vertically polarized photon
+               << -1 << arma::endr
+               << 0 << arma::endr
+               << 0 << arma::endr;
+
         while (status == 1 && nScat < 10) {   // while the photon is still alive.....
 
 
-            
+
             // Move Photon
             r = -1 * log(((double) rand() / (RAND_MAX)))/c; // generate a random propegation distance
             x2 = x1 + mux1 * r; // update the photon's new x position
@@ -170,39 +286,39 @@ int main (){
             // Did the photon cross the plane of the detector?
             if (z2 < zd){ // if the photons position is above the plane of the detector.... then it crossed the plane
                 status = 0; //kill the photon
-                
+
                 fd = (zd - z1) / (z2 - z1); // calculate the multiplicative factor for the distance along the photon trajector to the detector
                 xT = x1 + fd * (x2 - x1); // calculate x-location that photon hits plane
                 yT = y1 + fd * (y2 - y1); // calculate y-location that photon hits plane
                 hitRad = sqrt((xT-xd) * (xT-xd) + (yT-yd) * (yT-yd)); // distance from detector center
-                
-                
+
+
                 // Did the photon hit the detector?
                 if (hitRad < detectorRad){      // yes, if the photon hits within the radius of the detector
                     anglei = intersectionAngle(x1,y1,z1,x2,y2,z2); // calculate the angle between the detector plane and photon trajectory
-                    
+
                     // Did the photon hit the detector within the FOV?
                     if(anglei <= FOV){      // yes, if the intersection angle is less than the 1/2 angle FOV
-                        
-                        
+
+
                         // Create unpolarized signal
                         rTotal = rTotal - (r-(fd *r )); // calculate the distance;
                         signalWeight.push_back(weight); // append photon weight (omega^n) to signal weight vector
                         distance.push_back(rTotal); // append the total distance travelled by the photon to the distance vector
                         // Create polarized signal
-                        
+
                         // rotate into the detector reference frame
                         detectAngle = atan2(mux1,muy1);
-                        rotationDetector  << 1 << 0 << 0 << 0 << endr
-                                          << 0 << (cos(2*detectAngle)) << (sin(2*detectAngle)) << 0 << endr
-                                          << 0 << (-1*sin(2*detectAngle)) << (cos(2*detectAngle)) << 0 << endr
-                                          << 0 << 0 << 0 << 1 << endr;
-                        
+                        rotationDetector  << 1 << 0 << 0 << 0 << arma::endr
+                                          << 0 << (cos(2*detectAngle)) << (sin(2*detectAngle)) << 0 << arma::endr
+                                          << 0 << (-1*sin(2*detectAngle)) << (cos(2*detectAngle)) << 0 << arma::endr
+                                          << 0 << 0 << 0 << 1 << arma::endr;
+
                         stokesDetect = rotationDetector * stokes; // rotate stokes vector into the referecne frame of detector
-                        
+
                         coPol = (0.5 * stokesDetect[0] - 0.5 * stokesDetect[1]) * weight;
                         crossPol = (0.5 * stokesDetect[0] + 0.5 * stokesDetect[1]) * weight;
-                        
+
                         signalCOweight.push_back(coPol);
                         signalCROSSweight.push_back(crossPol);
                     }
@@ -211,21 +327,21 @@ int main (){
                 else{
                     theta = deg2Rad(spl(((double) rand() / (RAND_MAX)))); // generate a random scattering angle from the VSF
                     phi = 2 * pi * ((double) rand() / (RAND_MAX));  // generate a
-                    
+
                     mux2 = updateDirCosX(theta, phi, mux1, muy1, muz1); // update the photon X direction cosine
                     muy2 = updateDirCosY(theta, phi, mux1, muy1, muz1); // update the photon Y direction cosine
                     muz2 = updateDirCosZ(theta, phi, mux1, muy1, muz1); // update the photon Z direction cosine
-                    
+
                     // Update Polarization Variables
                     gamma = gammaCalc(muz1, muz2, theta, phi); // update reference frame rotation angle
-                
-                    mueller << 1 << (-sin(theta)*sin(theta)) / (1 + cos(theta) * cos(theta)) << 0 << 0 << endr
-                            << (-sin(theta)*sin(theta)) / (1 + cos(theta) * cos(theta)) << 1 << 0 << 0 << endr
-                            << 0 << 0 << 2*cos(theta) / (1+cos(theta)*cos(theta)) << 0 << endr
-                            << 0 << 0 << 0 << 2*cos(theta) / (1+cos(theta)*cos(theta)) << endr;
+
+                    mueller << 1 << (-sin(theta)*sin(theta)) / (1 + cos(theta) * cos(theta)) << 0 << 0 << arma::endr
+                            << (-sin(theta)*sin(theta)) / (1 + cos(theta) * cos(theta)) << 1 << 0 << 0 << arma::endr
+                            << 0 << 0 << 2*cos(theta) / (1+cos(theta)*cos(theta)) << 0 << arma::endr
+                            << 0 << 0 << 0 << 2*cos(theta) / (1+cos(theta)*cos(theta)) << arma::endr;
 
 
-                    
+
 //                    mueller << 1 << -1 << 0 << 0 << endr
 //                            << -1 << 1 << 0 << 0 << endr
 //                            << 0 << 0 << 0 << 0 << endr
@@ -236,21 +352,21 @@ int main (){
                     x1 = x2;
                     y1 = y2;
                     z1 = z2;
-                
+
                     mux1 = mux2;
                     muy1 = muy2;
                     muz1 = muz2;
-                    
+
                     //cout << mux1*mux1 + muy1*muy1 + muz1*muz1 << endl;
 
                     nScat = nScat+1; // update the number of scattering events
-                    
+
                     // Update Photon Weight
                     nScat = nScat+1; // update the number of scattering events
                     weight = weight * omega; // update weight variable
-                    
+
                     // Photon Termination Roulette - allows for conservation of energy with unbiased photon termination //
-                    
+
                     if (weight < 0.01){ // unbiased roulette termination
                         if (rand() < threshold){
                             weight = weight * threshold;
@@ -259,22 +375,22 @@ int main (){
                             status = 0;
                         }
                     }
-                    
+
                 }
-            
+
         }
     }
-        
+
     dBin = 0.25; //bin widths (m)
     max = *max_element(distance.begin(), distance.end()); //find the maximum value in the distance vector
     for (int i=0; i<ceil(max/dBin); i++){
         binEdges.push_back(i*dBin+dBin); //create a variable containing the upper bin edge of each distance bin
     }
-    
+
     vector <double> signal(binEdges.size(),0.0); // initialize the final signal vector based off of the size of the distance bins vector
     vector <double> signalCO(binEdges.size(),0.0); // initialize the final signal vector based off of the size of the distance bins vector
     vector <double> signalCROSS(binEdges.size(),0.0); // initialize the final signal vector based off of the size of the distance bins vector
-    
+
     for (int i=0; i<distance.size(); i++){  //loop through each element of the distance bin......
         bd = (ceil(distance[i]/dBin)*dBin); //.....find the value of the distance bin that the photon belongs to.....
         signal.at(int(bd/0.25)-1) = signal[(int(bd/0.25)-1)] + signalWeight[i]; //...add the value of the photon weight to the signal variable at the correct index for its distance bin
@@ -320,10 +436,11 @@ int main (){
         myfile << signalCROSS[j];
         myfile << "\n";
     }
-        
+
     myfile.close();
 return 0;
 }
+
 
 
 
@@ -387,20 +504,20 @@ double intersectionAngle(double x1,double y1,double z1,double x2,double y2,doubl
 // Validated against calculations performed by hand
 // In order to determine if a photon has entered the detector within the FOV of the detector, this function calculates the
 // angle between the unit vector normal to the detector plane and the propegation vector
-  colvec c1; colvec c2; colvec u; colvec v;
+    arma::colvec c1; arma::colvec c2; arma::colvec u; arma::colvec v;
   double angle;
 
-  c1   << x1 << endr  // an array containing the first x,y,z points of the propegation vector
-       << y1 << endr  // vector declarations are made using c++94 style
-       << z1 << endr;
+  c1   << x1 << arma::endr  // an array containing the first x,y,z points of the propegation vector
+       << y1 << arma::endr  // vector declarations are made using c++94 style
+       << z1 << arma::endr;
 
-  c2   << x2 << endr // an array containing the first x,y,z points of the propegation vector
-       << y2 << endr  // vector declarations are made using c++94 style
-       << z2 << endr; // an array containing the second x,y,z points of the propegation vector
+  c2   << x2 << arma::endr // an array containing the first x,y,z points of the propegation vector
+       << y2 << arma::endr  // vector declarations are made using c++94 style
+       << z2 << arma::endr; // an array containing the second x,y,z points of the propegation vector
 
-  u   <<  0  << endr
-      <<  0  << endr
-      << -1  << endr;   // create a unit vector normal to the plane of the detector at the origin
+  u   <<  0 << arma::endr
+      <<  0  << arma::endr
+      << -1  << arma::endr;   // create a unit vector normal to the plane of the detector at the origin
 
   v = c2 - c1;   // convert the propegation vector to a unit vector
 
@@ -415,14 +532,14 @@ double intersectionPointX(double x1, double y1, double z1, double x2, double y2,
 // Parametric equation for a line r(t) = <x1,y1,z1> + t<x2-x1, y2-y1, z2-z1>
 // or <x1 + t*(x2-x1), y1 + t(y2-y1), z1 + t(z2-z1)>
 // Step (1) - plug z coordinate into plane equation and solve for t
-    
+
     //Variable Initialization
     double t; double xi;
-    
+
     //Function Body
     t = -1 * z1 / (z2-z1);
     xi = x1 + t*(x2-x1);
-    
+
     return xi;
 }
 
@@ -432,77 +549,76 @@ double intersectionPointY(double x1, double y1, double z1, double x2, double y2,
 // Parametric equation for a line r(t) = <x1,y1,z1> + t<x2-x1, y2-y1, z2-z1>
 // or <x1 + t*(x2-x1), y1 + t(y2-y1), z1 + t(z2-z1)>
 // Step (1) - plug z coordinate into plane equation and solve for t
-    
+
     //Variable Initialization
     double t; double yi;
-    
+
     //Function Body
     t = -1 * z1 / (z2-z1);
     yi = y1 + t*(y2-y1);
-    
+
     return yi;
 }
 
 // Update the Stokes vector
-mat updateStokes(mat stokes, mat mueller, double phi, double gamma){
+arma::mat updateStokes(arma::mat stokes, arma::mat mueller, double phi, double gamma){
     // Variable Initialization
-    mat rotationIn; mat rotationOut; mat stokesPrime;
-    
+    arma::mat rotationIn; arma::mat rotationOut; arma::mat stokesPrime;
+
     //Function Body
-    rotationIn  << 1 << 0 << 0 << 0 << endr // Rotates the photon counterclockwise (if photon is coming at you) by angle phi into the scattering plane
-                << 0 << (cos(-2*phi)) << (sin(-2*phi)) << 0 << endr
-                << 0 << (-sin(-2*phi)) << (cos(-2*phi)) << 0 << endr
-                << 0 << 0 << 0 << 1 << endr;
-    
-    rotationOut  << 1 << 0 << 0 << 0 << endr // Rotates the photon counterclockwise (if photon is coming at you) by angle gamma into the new scattering plane
-                 << 0 << (cos(-2*gamma)) << (sin(-2*gamma)) << 0 << endr
-                 << 0 << (-sin(-2*gamma)) << (cos(-2*gamma)) << 0 << endr
-                 << 0 << 0 << 0 << 1 << endr;
-    
+    rotationIn  << 1 << 0 << 0 << 0 << arma::endr // Rotates the photon counterclockwise (if photon is coming at you) by angle phi into the scattering plane
+                << 0 << (cos(-2*phi)) << (sin(-2*phi)) << 0 << arma::endr
+                << 0 << (-sin(-2*phi)) << (cos(-2*phi)) << 0 << arma::endr
+                << 0 << 0 << 0 << 1 << arma::endr;
+
+    rotationOut  << 1 << 0 << 0 << 0 << arma::endr // Rotates the photon counterclockwise (if photon is coming at you) by angle gamma into the new scattering plane
+                 << 0 << (cos(-2*gamma)) << (sin(-2*gamma)) << 0 << arma::endr
+                 << 0 << (-sin(-2*gamma)) << (cos(-2*gamma)) << 0 << arma::endr
+                 << 0 << 0 << 0 << 1 << arma::endr;
+
     stokesPrime = rotationOut * mueller * rotationIn * stokes;
-    
+
 
     stokesPrime[1] = stokesPrime[1] / stokesPrime[0];
     stokesPrime[2] = stokesPrime[2] / stokesPrime[0];
     stokesPrime[3] = stokesPrime[3] / stokesPrime[0];
     stokesPrime[0] = 1.0;
-    
+
 
     return stokesPrime;
 }
 
 // Calculate the rotation angle into the new reference frame of the photon
 double gammaCalc(double muz1, double muz2, double theta, double phi){
-    
+
     // Calculates the angle of rotation back into the new photon coordinate space using sperical trig cosine identity
     //cosa = cos(b)cos(c) + sin(b)sin(c)cos(A)
     // set the unknown angle to be A, rearrange, and solve
     // See http://mathworld.wolfram.com/SphericalTrigonometry.html for more details if you need some visual help
-    
+
     // Variable Initialization
     double gammaCos; double gamma;
-    
+
     //Function Body
-    
+
     if (pi < phi < 2*pi){
         gammaCos = (muz1 - muz2*cos(theta)) / sin(theta) * sqrt((1 - muz2 * muz2));
     }
     else{
         gammaCos = (muz1 - muz2*cos(theta)) / (-1 * sin(theta)) * sqrt((1 - muz2 * muz2));
-        
+
     }
     gamma = acos(gammaCos);
-    
+
     return gamma;
 }
 
 // Mie Calculations translated from Bohren and Huffman 1998
 int bhmie(double x,double refrel,int nang){
-    
+
     // Variable Definitions
     complex<double> y; double dx; double nstop; double ymod; int nmx; double dang; double theta;
-    int nn;
-    double RN; double DN; double FN;
+    int nn; double RN; double DN; double FN;
     complex<double> AN; complex<double> BN;
     double PSI; double PSI0; double PSI1;
     double CHI; double CHI0; double CHI1;
@@ -510,51 +626,53 @@ int bhmie(double x,double refrel,int nang){
     complex <double> XI; complex <double> XI0; complex <double> XI1;
     double Qscat; double Qext; double Qback;
     double P; double T;
-    
-    
+
+
     // Array Definitions
+    //  - all arrays are 1 element too big to comply with fortran sysntax from which this code was converted. The first element is at position [1] and NOT position [0]
+
     double PI[nang+1]; double PI0[nang+1]; double PI1[nang+1];
-    complex<double> S1[2*nang]; complex<double> S2[2*nang];
-    
     double AMU[nang+1]; double TAU[nang+1];
-    
-    
+    complex<double> S1[2*nang]; complex<double> S2[2*nang];
+
+
+
     dx = x;
     y = x * refrel;
-    
+
     nstop = ceil(x + 4 * pow(x,0.3333) +2);
     ymod = abs(y);
     nmx = max(nstop,ceil(ymod))+15;
     complex<double> D[nmx];
     dang = pi/2/(nang-1);
-    
-    
+
+
     for (int i = 1; i<=nang; i++){
         theta = (double)(i-1) * dang;
         AMU[i] =  cos(theta);
     }
-    
+
     //Logarithmic derivative D(j) calculated by downward recurence
     D[nmx]= complex <double>(0,0);
     nn = nmx-1;
-    
+
     for (int n = 1; n<=nn; n++){
         RN = nmx-n+1;
         D[nmx-n]=(RN/y)-(1.0/(D[nmx-n+1]+RN/y));
     }
-    
+
     for (int j = 1; j <= nang; j++){
         PI0[j] = 0.0;
         PI1[j] = 1.0;
     }
-    
+
     nn = 2*nang-1;
-    
+
     for (int j = 1; j <= nang; j++){
         S1[j] = 0.0;
         S2[j] = 1.0;
     }
-    
+
     //Riccati-Bessel functins with real argument x calculated by upward recurence
     PSI0=cos(dx);
     PSI1=sin(dx);
@@ -565,7 +683,7 @@ int bhmie(double x,double refrel,int nang){
     XI0=APSI0-CHI0*imaginary;
     XI1=APSI1-CHI1*imaginary;
     Qscat=0.0;
-    
+
     int n=1;
     while(n-1-nstop<0){
         DN=n;
@@ -578,8 +696,8 @@ int bhmie(double x,double refrel,int nang){
         AN=((D[n]/refrel+RN/x)*APSI-APSI1)/((D[n]/refrel+RN/x)*XI-XI1);
         BN=((refrel*D[n]+RN/x)*APSI-APSI1)/((D[n]*refrel+RN/x)*XI-XI1);
         Qscat=Qscat+(2.0*RN+1.0)*(abs(AN)*abs(AN)+abs(BN)*abs(BN));
-        
-        
+
+
         for (int j=1; j<=nang; j++){
             int jj=2*nang-j;
             PI[j]=PI1[j];
@@ -594,10 +712,10 @@ int bhmie(double x,double refrel,int nang){
                 if (jj>180){
                     cout << S1[180] << endl;
                 }
-                
+
             }
         }
-        
+
         PSI0=PSI1;
         PSI1=PSI;
         APSI1=PSI1;
@@ -616,8 +734,151 @@ int bhmie(double x,double refrel,int nang){
     //Note: Qback is not Qbb, but the radar back scattering.
     Qback=(4.0/(x*x))*(abs(S1[2*nang-1])*abs(S1[2*nang-1]));
     //cout << "Qext = " << Qext << endl;
-    
+
     return 0;
+}
+int bhmie(double x, double refrel, int nang, double* Qscat_p, double* Qext_p, double* Qback_p, complex<double>* S1_p, complex<double>* S2_p, double * diffPoint){
+
+    // Variable Definitions
+    complex<double> y; double dx; double nstop; double ymod; int nmx; double dang; double theta;
+    int nn;
+    double RN; double DN; double FN;
+    complex<double> AN; complex<double> BN;
+    double PSI; double PSI0; double PSI1;
+    double CHI; double CHI0; double CHI1;
+    double APSI; double APSI0; double APSI1;
+    complex <double> XI; complex <double> XI0; complex <double> XI1;
+    double P; double T;
+
+    // Assign variables that will be exported to the value of their pointers
+    double Qscat_f = *Qscat_p; double Qext_f = *Qext_p; double Qback_f = *Qback_p;
+
+    // Array Definitions
+    double PI[nang+1]; double PI0[nang+1]; double PI1[nang+1];
+    complex<double> S1[2*nang+1]; complex<double> S2[2*nang+1];
+    double AMU[nang+1]; double TAU[nang+1];
+
+    dx = x;
+    y = x * refrel;
+
+    nstop = ceil(x + 4 * pow(x,0.3333) +2);
+    ymod = abs(y);
+    nmx = max(nstop,ceil(ymod))+15;
+    complex<double> D[nmx];
+    dang = pi/2/(nang-1);
+
+
+    for (int i = 1; i<=nang; i++){
+        theta = (double)(i-1) * dang;
+        AMU[i] =  cos(theta);
+    }
+
+    //Logarithmic derivative D(j) calculated by downward recurence
+    D[nmx]= complex <double>(0,0);
+    nn = nmx-1;
+
+    for (int n = 1; n<=nn; n++){
+        RN = nmx-n+1;
+        D[nmx-n]=(RN/y)-(1.0/(D[nmx-n+1]+RN/y));
+    }
+
+    for (int j = 1; j <= nang; j++){
+        PI0[j] = 0.0;
+        PI1[j] = 1.0;
+    }
+
+    nn = 2*nang-1;
+
+    for (int j = 1; j <= nang; j++){
+        S1[j] = 0.0;
+        S2[j] = 0.0;
+    }
+
+    //Riccati-Bessel functins with real argument x calculated by upward recurence
+    PSI0=cos(dx);
+    PSI1=sin(dx);
+    CHI0=-sin(x);
+    CHI1=cos(x);
+    APSI0=PSI0;
+    APSI1=PSI1;
+    XI0=APSI0-CHI0*imaginary;
+    XI1=APSI1-CHI1*imaginary;
+    Qscat_f=0.0;
+
+    int n=1;
+    while(n-1-nstop<0){
+        DN=n;
+        RN=n;
+        FN=(2*RN+1)/(RN*(RN+1));
+        PSI=(2*DN-1)*PSI1/dx-PSI0;
+        APSI=PSI;
+        CHI=(2*RN-1)*CHI1/x-CHI0;
+        XI=APSI-CHI*imaginary;
+        AN=((D[n]/refrel+RN/x)*APSI-APSI1)/((D[n]/refrel+RN/x)*XI-XI1);
+        BN=((refrel*D[n]+RN/x)*APSI-APSI1)/((D[n]*refrel+RN/x)*XI-XI1);
+        Qscat_f=Qscat_f+(2.0*RN+1.0)*(abs(AN)*abs(AN)+abs(BN)*abs(BN));
+
+
+        for (int j=1; j<=nang; j++){
+            int jj=2*nang-j;
+            PI[j]=PI1[j];
+            TAU[j]=RN*AMU[j]*PI[j]-(RN+1)*PI0[j];
+            P=pow(-1.0,(n-1));
+            S1[j]=S1[j]+FN*(AN*PI[j]+BN*TAU[j]);
+            T=pow((-1),n);
+            S2[j]=S2[j]+FN*(AN*TAU[j]+BN*PI[j]);
+            if(j != jj){
+                S1[jj]=S1[jj]+FN*(AN*PI[j]*P+BN*TAU[j]*T);
+                S2[jj]=S2[jj]+FN*(BN*PI[j]*P+AN*TAU[j]*T);
+
+            }
+        }
+
+        PSI0=PSI1;
+        PSI1=PSI;
+        APSI1=PSI1;
+        CHI0=CHI1;
+        CHI1=CHI;
+        XI1=APSI1-CHI1*imaginary;
+        n=n+1;
+        RN=n;
+        for (int j=1; j<=nang; j++){
+            PI1[j]=((2*RN-1)/(RN-1))*AMU[j]*PI[j]-RN*PI0[j]/(RN-1);
+            PI0[j]=PI[j];
+        }
+    }
+
+    Qscat_f=(2.0/(x*x))*Qscat_f;
+    Qext_f=(4.0/(x*x))*real(S1[1]);
+    //Note: Qback is not Qbb, but the radar back scattering.
+    Qback_f=(4.0/(x*x))*(abs(S1[2*nang-1])*abs(S1[2*nang-1]));
+    //cout << "Qext_f = " << Qext_f << endl;
+
+
+    // Move scattering efficiencies out of the function
+    *Qscat_p = Qscat_f; // update the value of Qscat in main using a pointer
+    *Qext_p  = Qext_f; // update the value of Qext in main using a pointer
+    *Qback_p = Qback_f; // update the value of Qback in main using a pointer
+
+    // Move S1 and S2 out of the function
+    for (int i=1; i<=nang*2-1; i++){
+      S1_p[i] = S1[i];
+    }
+
+    for (int i=1; i<=nang*2-1; i++){
+      S2_p[i] = S2[i];
+    }
+    return 0;
+}
+
+double trapz(double x[], double y[], int size){
+  double s;
+  double sTemp = 0.0;
+  for (int i = 0; i<size-1; i++){
+    sTemp = sTemp+(x[i+1]-x[i])*(y[i+1]+y[i]);
+  }
+  s = 0.5*sTemp;
+  return s;
 }
 
 
@@ -646,5 +907,3 @@ int bhmie(double x,double refrel,int nang){
 //   return r;
 // }
 //
-
- 
