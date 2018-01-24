@@ -30,7 +30,6 @@ double updateDirCosZ(double theta, double phi, double mux, double muy, double mu
 
 // Detector FOV Calculations
 double intersectionAngle(double x1,double y1,double z1,double x2,double y2,double z2); // angle of intersection between detector and photon trajectory
-
 double intersectionPointX(double x1,double y1,double z1,double x2,double y2,double z2); // x location of intersection with detector plane
 double intersectionPointY(double x1,double y1,double z1,double x2,double y2,double z2); // y location of intersection with detector plane
 
@@ -39,7 +38,8 @@ arma::mat updateStokes(arma::mat stokes, arma::mat mueller, double phi, double g
 double gammaCalc(double muz1, double muz2, double theta, double phi); // calculate the rotation angle
 
 // Mie Calculations
-int bhmie(double x,double refrel,int nang, double* Qscat_p, double* Qext_p, double* Qback_p, complex<double>* S1_p, complex<double>* S2_p, double* diffPoint);
+int bhmie(double x,double refrel,int nang, double* Qscat_p, double* Qext_p, double* Qback_p, complex<double>* S1_p, complex<double>* S2_p);
+
 double trapz(double x[], double y[], int size);
 
 // main function
@@ -60,7 +60,7 @@ int main (){
     double anglei; // angle of intersection between photon and detector plane
 
     // Define water column IOPs //
-    double a = 0.4; //absorption coefficient (m^-^1)
+    double a = 0.1; //absorption coefficient (m^-^1)
     double b = 0.5; //scattering coefficient (m^-^1)
     double c = a + b; //bema attenuation coefficient (m^-^1)
     double omega = b/c; // single scattering albedo
@@ -69,7 +69,7 @@ int main (){
 
     // Refractive Index
     double refMed = 1.33;
-    double refPart = 1.45;//(1.3, 0.008); // relative refractive index
+    double refPart = 1.45; //(1.3, 0.008); // relative refractive index
     double refRel = refPart/refMed;
 
     // Wavelength
@@ -78,8 +78,14 @@ int main (){
     double kMed = 2*pi/lambdaMed; // Lidar wavenumber in Medium;
 
     // Angles
-    int nang = 91; // number of angles between 0-90
-    int nang1 = nang*2-1; // number of angles 0-180
+    const int nang = 500; // number of angles between 0-90
+    const int nangTot = (2*nang-1);
+    double dang = pi/2/(nang-1);
+    double angles[nangTot];
+    
+    for (int i=0; i<nangTot; i++){
+        angles[i] = (double)i*dang;
+    }
 
     // Particle Size Distribution Parameters
 
@@ -92,7 +98,6 @@ int main (){
     // Initialize Particle Size Arrays
     double D[diamBin]; double radius[diamBin]; double sizeParam[diamBin];
     double diffNumDistribution[diamBin];
-    double* diffPoint = &diffNumDistribution[0];
 
     // Set PSD array values/Users/Brian/Documents/C++/LidarMCplusplus/LidarMC++.cpp
 
@@ -117,41 +122,44 @@ int main (){
     complex<double>* S1_p = S1; complex<double>* S2_p = S2;
 
     // Mueller Matrix elements
-    double s11[2*nang-1][diamBin];
-    double s12[2*nang-1][diamBin];
-    double s33[2*nang-1][diamBin];
-    double s34[2*nang-1][diamBin];
+    double s11[nangTot][diamBin];
+    double s12[nangTot][diamBin];
+    double s33[nangTot][diamBin];
+    double s34[nangTot][diamBin];
 
-    double integrandS11[2*nang-1][diamBin];
-    double integrandS12[2*nang-1][diamBin];
-    double integrandS33[2*nang-1][diamBin];
-    double integrandS34[2*nang-1][diamBin];
+    double integrandS11[nangTot][diamBin];
+    double integrandS12[nangTot][diamBin];
+    double integrandS33[nangTot][diamBin];
+    double integrandS34[nangTot][diamBin];
 
     double integrandArray11[diamBin];
     double integrandArray12[diamBin];
     double integrandArray33[diamBin];
     double integrandArray34[diamBin];
 
-    double s11bar[2*nang-1];
-    double s12bar[2*nang-1];
-    double s33bar[2*nang-1];
-    double s34bar[2*nang-1];
+    double s11bar[nangTot];
+    double s12bar[nangTot];
+    double s33bar[nangTot];
+    double s34bar[nangTot];
 
     // Define Distribution //
     double k = 5E18; // differential number concentration at particle size D0
 
     double jungeSlope = 4.0; // slope of the junge distribution
-
-    for (int i = 0; i<diamBin; i++){
-      diffNumDistribution[i] = k*pow((D[i]/D[0]),(-1*jungeSlope)); // # of particles m^-3 um^-1
+    
+    for (int i = 0;i<diamBin; i++){
+        diffNumDistribution[i] = k*pow((D[i]/D[0]),(-1*jungeSlope)); // # of particles m^-3 um^-1
     }
+
+//    for (int i = 0; i<diamBin; i++){
+//    }
 /////////////////// Bulk Mie Calculations /////////////////////
     // Mie Calculations for Each Size Parameter in the distribution
     //j+1 is used to convert from fortran indexing to c++indexing
     for (int i = 0; i<diamBin; i++){
-      bhmie(sizeParam[i],refRel,nang,Qscat_p, Qext_p, Qback_p, S1_p, S2_p, diffPoint);
+      bhmie(sizeParam[i],refRel,nang,Qscat_p, Qext_p, Qback_p, S1_p, S2_p);
 
-      for (int j = 0; j<2*nang-1; j++){
+      for (int j = 0; j<nangTot; j++){
         s11[j][i] = 0.5 * (pow(abs(S2[j+1]),2) + pow(abs(S1[j+1]),2));
         s12[j][i] = 0.5 * (pow(abs(S2[j+1]),2) - pow(abs(S1[j+1]),2));
         s33[j][i] = real(S1[j+1]*conj(S2[j+1]));
@@ -161,15 +169,15 @@ int main (){
 
     // Define integrand to calculate bulk mueller atrix properties
     for (int i=0; i<diamBin; i++){
-      for (int j=0; j<2*nang-1; j++){
+      for (int j=0; j<nangTot; j++){
         integrandS11[j][i] = diffNumDistribution[i] * s11[j][i]; // good
         integrandS12[j][i] = diffNumDistribution[i] * s12[j][i]; // good
         integrandS33[j][i] = diffNumDistribution[i] * s33[j][i]; // good
         integrandS34[j][i] = diffNumDistribution[i] * s34[j][i]; // good
-    }
+      }
     }
 
-    for (int i=0; i<2*nang-1; i++){
+    for (int i=0; i<nangTot; i++){
       for (int j=0; j<diamBin; j++){
         integrandArray11[j] = integrandS11[i][j];
         integrandArray12[j] = integrandS12[i][j];
@@ -209,23 +217,37 @@ int main (){
     vector<double> distance; // distance associated with each signal bin
     vector<double> signalCOweight; // distance associated with each signal bin
     vector<double> signalCROSSweight; // distance associated with each signal bin
+    
+    vector<double> s11Vec (s11bar, s11bar+sizeof(s11bar)/sizeof(s11bar[0]));
+    vector<double> s12Vec (s12bar, s12bar+sizeof(s12bar)/sizeof(s12bar[0]));
+    vector<double> s33Vec (s33bar, s33bar+sizeof(s33bar)/sizeof(s33bar[0]));
+    vector<double> s34Vec (s34bar, s34bar+sizeof(s34bar)/sizeof(s34bar[0]));
+    vector<double> anglesVec (angles, angles+sizeof(angles)/sizeof(angles[0]));
 
-    double I; double I0; int ithdeg;
-//    // Initialize the spline interpolation function
-//    tk::spline spl; // define the spline interpolation function
-//    spl.set_points(pThetaVec,thetaVec); // set the x and y values the the spline interpolation will operate on
+    // Initialize the spline interpolation function
+    tk::spline splS11; // define the spline interpolation function
+    tk::spline splS12; // define the spline interpolation function
+    tk::spline splS33; // define the spline interpolation function
+    tk::spline splS34; // define the spline interpolation function
+    
+    splS11.set_points(anglesVec,s11Vec); // set the x and y values that the spline interpolation will operate on
+    splS12.set_points(anglesVec,s12Vec); // set the x and y values that the spline interpolation will operate on
+    splS33.set_points(anglesVec,s33Vec); // set the x and y values that the spline interpolation will operate on
+    splS34.set_points(anglesVec,s34Vec); // set the x and y values that the spline interpolation will operate on
+    //cout << splS11(0.5)<< endl;
+    double I; double I0; 
 
     // Mont Carlo parameters
     //nPhotons = 1000 // number of photons to trace
     //nPhotons = 10000 // number of photons to trace
     //Photons = 100000 // number of photons to trace
     //nPhotons = 1000000 // number of photons to trace
-    int nPhotons = 100000; // number of photons to trace
+    int nPhotons = 1000000; // number of photons to trace
 
     // Predefined Working Variables
-    mt19937::result_type seed = chrono::high_resolution_clock::now().time_since_epoch().count(); // seed the random number generator
-    auto real_rand = std::bind(std::uniform_real_distribution<double>(0,1),
-                             mt19937(seed));
+//    mt19937::result_type seed = chrono::high_resolution_clock::now().time_since_epoch().count(); // seed the random number generator
+//    auto real_rand = std::bind(std::uniform_real_distribution<double>(0,1),
+//                             mt19937(seed));
 
 
     // Main Code
@@ -253,9 +275,7 @@ int main (){
                << 0 << arma::endr;
 
         while (status == 1 && nScat < 10) {   // while the photon is still alive.....
-
-
-
+            
             // Move Photon
             r = -1 * log(((double) rand() / (RAND_MAX)))/c; // generate a random propegation distance
             x2 = x1 + mux1 * r; // update the photon's new x position
@@ -308,12 +328,13 @@ int main (){
                 else{
                     do{
                         theta = acos(2.0*((double) rand() / (RAND_MAX))-1);
-                        phi = rand()*2.0*pi;
+                        phi = ((double) rand() / (RAND_MAX))*2.0*pi;
                         I0 = s11bar[0]*stokes[0]+s12bar[0]*(stokes[1]*cos(2*phi)+stokes[2]*sin(2*phi));
-                        ithdeg = floor(theta*nang1/pi);
-                        I = s11bar[ithdeg]*stokes[0]+s12bar[ithdeg]*(stokes[1]*cos(2*phi)+stokes[2]*sin(2*phi));
+                        I = splS11(theta)*stokes[0]+splS12(theta)*(stokes[1]*cos(2*phi)+stokes[2]*sin(2*phi));
                     }while(((double) rand() / (RAND_MAX))*I0>=I);
-
+                    
+                    //cout<<theta<<","<<phi<<endl;
+                    
                     mux2 = updateDirCosX(theta, phi, mux1, muy1, muz1); // update the photon X direction cosine
                     muy2 = updateDirCosY(theta, phi, mux1, muy1, muz1); // update the photon Y direction cosine
                     muz2 = updateDirCosZ(theta, phi, mux1, muy1, muz1); // update the photon Z direction cosine
@@ -321,11 +342,10 @@ int main (){
                     // Update Polarization Variables
                     gamma = gammaCalc(muz1, muz2, theta, phi); // update reference frame rotation angle
 
-                    mueller << 1 << (-sin(theta)*sin(theta)) / (1 + cos(theta) * cos(theta)) << 0 << 0 << arma::endr
-                            << (-sin(theta)*sin(theta)) / (1 + cos(theta) * cos(theta)) << 1 << 0 << 0 << arma::endr
-                            << 0 << 0 << 2*cos(theta) / (1+cos(theta)*cos(theta)) << 0 << arma::endr
-                            << 0 << 0 << 0 << 2*cos(theta) / (1+cos(theta)*cos(theta)) << arma::endr;
-                    
+                    mueller << splS11(theta) << splS12(theta) << 0 << 0 << arma::endr
+                            << splS12(theta) << splS11(theta) << 0 << 0 << arma::endr
+                            << 0 << 0 << splS33(theta) << splS34(theta) << arma::endr
+                            << 0 << 0 <<-1*splS34(theta)<< splS33(theta) << arma::endr;
                     stokes = updateStokes(stokes, mueller, phi, gamma);
                     
                     // reset position variables
@@ -569,7 +589,7 @@ arma::mat updateStokes(arma::mat stokes, arma::mat mueller, double phi, double g
 double gammaCalc(double muz1, double muz2, double theta, double phi){
 
     // Calculates the angle of rotation back into the new photon coordinate space using sperical trig cosine identity
-    //cosa = cos(b)cos(c) + sin(b)sin(c)cos(A)
+    // cosa = cos(b)cos(c) + sin(b)sin(c)cos(A)
     // set the unknown angle to be A, rearrange, and solve
     // See http://mathworld.wolfram.com/SphericalTrigonometry.html for more details if you need some visual help
 
@@ -592,7 +612,7 @@ double gammaCalc(double muz1, double muz2, double theta, double phi){
 
 // Mie Calculations translated from Bohren and Huffman 1998
 
-int bhmie(double x, double refrel, int nang, double* Qscat_p, double* Qext_p, double* Qback_p, complex<double>* S1_p, complex<double>* S2_p, double * diffPoint){
+int bhmie(double x, double refrel, int nang, double* Qscat_p, double* Qext_p, double* Qback_p, complex<double>* S1_p, complex<double>* S2_p){
 
     // Variable Definitions
     complex<double> y; double dx; double nstop; double ymod; int nmx; double dang; double theta;
