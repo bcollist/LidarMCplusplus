@@ -184,10 +184,10 @@ int main (){
         integrandArray33[j] = integrandS33[i][j];
         integrandArray34[j] = integrandS34[i][j];
       }
-    s11bar[i] = (1.0/(kMed*kMed))*trapz(sizeParam,integrandArray11,diamBin);
-    s12bar[i] = (1.0/(kMed*kMed))*trapz(sizeParam,integrandArray12,diamBin);
-    s33bar[i] = (1.0/(kMed*kMed))*trapz(sizeParam,integrandArray33,diamBin);
-    s34bar[i] = (1.0/(kMed*kMed))*trapz(sizeParam,integrandArray34,diamBin);
+    s11bar[i] = (1.0/(kMed*kMed)) * trapz(sizeParam,integrandArray11,diamBin);
+    s12bar[i] = (1.0/(kMed*kMed)) * trapz(sizeParam,integrandArray12,diamBin);
+    s33bar[i] = (1.0/(kMed*kMed)) * trapz(sizeParam,integrandArray33,diamBin);
+    s34bar[i] = (1.0/(kMed*kMed)) * trapz(sizeParam,integrandArray34,diamBin);
     }
 
 
@@ -327,13 +327,13 @@ int main (){
             }
                 else{
                     do{
-                        theta = acos(2.0*((double) rand() / (RAND_MAX))-1);
+                        theta = acos((2.0*(double)rand() / (RAND_MAX))-1);
                         phi = ((double) rand() / (RAND_MAX))*2.0*pi;
                         I0 = s11bar[0]*stokes[0]+s12bar[0]*(stokes[1]*cos(2*phi)+stokes[2]*sin(2*phi));
                         I = splS11(theta)*stokes[0]+splS12(theta)*(stokes[1]*cos(2*phi)+stokes[2]*sin(2*phi));
                     }while(((double) rand() / (RAND_MAX))*I0>=I);
                     
-                    //cout<<theta<<","<<phi<<endl;
+                    cout<<theta<<","<<phi<<endl;
                     
                     mux2 = updateDirCosX(theta, phi, mux1, muy1, muz1); // update the photon X direction cosine
                     muy2 = updateDirCosY(theta, phi, mux1, muy1, muz1); // update the photon Y direction cosine
@@ -393,9 +393,9 @@ int main (){
 
     for (int i=0; i<distance.size(); i++){  //loop through each element of the distance bin......
         bd = (ceil(distance[i]/dBin)*dBin); //.....find the value of the distance bin that the photon belongs to.....
-        signal.at(int(bd/0.25)-1) = signal[(int(bd/0.25)-1)] + signalWeight[i]; //...add the value of the photon weight to the signal variable at the correct index for its distance bin
-        signalCO.at(int(bd/0.25)-1) = signalCO[(int(bd/0.25)-1)] + signalCOweight[i]; //...add the value of the photon weight to the signal variable at the correct index for its distance bin
-        signalCROSS.at(int(bd/0.25)-1) = signalCROSS[(int(bd/0.25)-1)] + signalCROSSweight[i]; //...add the value of the photon weight to the signal variable at the correct index for its distance bin
+        signal.at(int(bd/dBin)-1) = signal[(int(bd/dBin)-1)] + signalWeight[i]; //...add the value of the photon weight to the signal variable at the correct index for its distance bin
+        signalCO.at(int(bd/dBin)-1) = signalCO[(int(bd/dBin)-1)] + signalCOweight[i]; //...add the value of the photon weight to the signal variable at the correct index for its distance bin
+        signalCROSS.at(int(bd/dBin)-1) = signalCROSS[(int(bd/dBin)-1)] + signalCROSSweight[i]; //...add the value of the photon weight to the signal variable at the correct index for its distance bin
     }
 
     ofstream myfile;
