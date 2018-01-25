@@ -44,7 +44,7 @@ double trapz(double x[], double y[], int size);
 
 // main function
 int main (){
-
+    auto start=chrono::system_clock::now();
     //////////////////////////// define constants //////////////////////////////////
 
     ////// Define Lidar Parameters//////
@@ -82,6 +82,7 @@ int main (){
     const int nangTot = (2*nang-1);
     double dang = pi/2/(nang-1);
     double angles[nangTot];
+    int degreei; // index for scattering angle theta
     
     for (int i=0; i<nangTot; i++){
         angles[i] = (double)i*dang;
@@ -217,25 +218,8 @@ int main (){
     vector<double> distance; // distance associated with each signal bin
     vector<double> signalCOweight; // distance associated with each signal bin
     vector<double> signalCROSSweight; // distance associated with each signal bin
-    
-    vector<double> s11Vec (s11bar, s11bar+sizeof(s11bar)/sizeof(s11bar[0]));
-    vector<double> s12Vec (s12bar, s12bar+sizeof(s12bar)/sizeof(s12bar[0]));
-    vector<double> s33Vec (s33bar, s33bar+sizeof(s33bar)/sizeof(s33bar[0]));
-    vector<double> s34Vec (s34bar, s34bar+sizeof(s34bar)/sizeof(s34bar[0]));
-    vector<double> anglesVec (angles, angles+sizeof(angles)/sizeof(angles[0]));
 
-    // Initialize the spline interpolation function
-    tk::spline splS11; // define the spline interpolation function
-    tk::spline splS12; // define the spline interpolation function
-    tk::spline splS33; // define the spline interpolation function
-    tk::spline splS34; // define the spline interpolation function
-    
-    splS11.set_points(anglesVec,s11Vec); // set the x and y values that the spline interpolation will operate on
-    splS12.set_points(anglesVec,s12Vec); // set the x and y values that the spline interpolation will operate on
-    splS33.set_points(anglesVec,s33Vec); // set the x and y values that the spline interpolation will operate on
-    splS34.set_points(anglesVec,s34Vec); // set the x and y values that the spline interpolation will operate on
-    //cout << splS11(0.5)<< endl;
-    double I; double I0; 
+    double I; double I0;
 
     // Mont Carlo parameters
     //nPhotons = 1000 // number of photons to trace
@@ -252,6 +236,15 @@ int main (){
 
     // Main Code
     for (int i = 0; i < nPhotons; ++i){      // loop through each individual photon
+        if (i == 1000){
+            cout << i << endl;
+        }
+        if (i == 10000){
+            cout << i << endl;
+        }
+        if (i == 100000){
+            cout << i << endl;
+        }
 
         // Photon Position and Direction Initialization
         double x1 = 0.0; double y1 = 0.0; double z1 = 0.0; // initialize photon position 1
@@ -330,11 +323,10 @@ int main (){
                         theta = acos((2.0*(double)rand() / (RAND_MAX))-1);
                         phi = ((double) rand() / (RAND_MAX))*2.0*pi;
                         I0 = s11bar[0]*stokes[0]+s12bar[0]*(stokes[1]*cos(2*phi)+stokes[2]*sin(2*phi));
-                        I = splS11(theta)*stokes[0]+splS12(theta)*(stokes[1]*cos(2*phi)+stokes[2]*sin(2*phi));
+                        degreei = floor(theta*nangTot/pi);
+                        I = s11bar[degreei]*stokes[0]+s12bar[degreei]*(stokes[1]*cos(2*phi)+stokes[2]*sin(2*phi));
                     }while(((double) rand() / (RAND_MAX))*I0>=I);
-                    
-                    cout<<theta<<","<<phi<<endl;
-                    
+
                     mux2 = updateDirCosX(theta, phi, mux1, muy1, muz1); // update the photon X direction cosine
                     muy2 = updateDirCosY(theta, phi, mux1, muy1, muz1); // update the photon Y direction cosine
                     muz2 = updateDirCosZ(theta, phi, mux1, muy1, muz1); // update the photon Z direction cosine
@@ -342,10 +334,10 @@ int main (){
                     // Update Polarization Variables
                     gamma = gammaCalc(muz1, muz2, theta, phi); // update reference frame rotation angle
 
-                    mueller << splS11(theta) << splS12(theta) << 0 << 0 << arma::endr
-                            << splS12(theta) << splS11(theta) << 0 << 0 << arma::endr
-                            << 0 << 0 << splS33(theta) << splS34(theta) << arma::endr
-                            << 0 << 0 <<-1*splS34(theta)<< splS33(theta) << arma::endr;
+                    mueller << s11bar[degreei] << s12bar[degreei] << 0 << 0 << arma::endr
+                            << s12bar[degreei] << s11bar[degreei] << 0 << 0 << arma::endr
+                            << 0 << 0 << s33bar[degreei] << s34bar[degreei] << arma::endr
+                            << 0 << 0 <<-1*s34bar[degreei]<< s33bar[degreei] << arma::endr;
                     stokes = updateStokes(stokes, mueller, phi, gamma);
                     
                     // reset position variables
@@ -381,7 +373,7 @@ int main (){
         }
     }
 
-    dBin = 0.25; //bin widths (m)
+    dBin = 0.5; //bin widths (m)
     max = *max_element(distance.begin(), distance.end()); //find the maximum value in the distance vector
     for (int i=0; i<ceil(max/dBin); i++){
         binEdges.push_back(i*dBin+dBin); //create a variable containing the upper bin edge of each distance bin
@@ -435,10 +427,16 @@ int main (){
         myfile << ",";
         myfile << signalCROSS[j];
         myfile << "\n";
+    
     }
 
     myfile.close();
-return 0;
+    
+    auto end = chrono::system_clock::now();     // End Time
+    
+    std::chrono::duration<double> elapsed_seconds = end-start;
+    cout<< "elapsed time: " << elapsed_seconds.count() << "s\n";
+    return 0;
 }
 
 
@@ -746,6 +744,7 @@ int bhmie(double x, double refrel, int nang, double* Qscat_p, double* Qext_p, do
     return 0;
 }
 
+// Trapezoidal Integration Function
 double trapz(double x[], double y[], int size){
   double s;
   double sTemp = 0.0;
