@@ -55,13 +55,13 @@ int main (){
     double FOV = deg2Rad(20); // half-angle FOV; enter in degrees -> converts to rad
 
     // detector position
-    double xd = 0.04; double yd = 0; double zd = 0; // position of the detector in (m)
+    double xd = 0.0; double yd = 0; double zd = 0; // position of the detector in (m)
     double fd; // variable used in detector photon geometry colculations
     double anglei; // angle of intersection between photon and detector plane
 
     // Define water column IOPs //
-    double a = 0.1; //absorption coefficient (m^-^1)
-    double b = 0.5; //scattering coefficient (m^-^1)
+    double a = 0.4; //absorption coefficient (m^-^1)
+    double b = 0.4; //scattering coefficient (m^-^1)
     double c = a + b; //bema attenuation coefficient (m^-^1)
     double omega = b/c; // single scattering albedo
 
@@ -86,6 +86,7 @@ int main (){
     
     for (int i=0; i<nangTot; i++){
         angles[i] = (double)i*dang;
+        //cout << angles[i] << endl;
     }
 
     // Particle Size Distribution Parameters
@@ -142,7 +143,11 @@ int main (){
     double s12bar[nangTot];
     double s33bar[nangTot];
     double s34bar[nangTot];
-
+    
+    double compFunction[nangTot];
+    double compFunctionI;
+    double compFunctionC[nangTot];
+    
     // Define Distribution //
     double k = 5E18; // differential number concentration at particle size D0
 
@@ -189,9 +194,30 @@ int main (){
     s12bar[i] = (1.0/(kMed*kMed)) * trapz(sizeParam,integrandArray12,diamBin);
     s33bar[i] = (1.0/(kMed*kMed)) * trapz(sizeParam,integrandArray33,diamBin);
     s34bar[i] = (1.0/(kMed*kMed)) * trapz(sizeParam,integrandArray34,diamBin);
+    compFunction[i] = (s11bar[i] + abs(s12bar[i]));
     }
+    /////// DOcumtnt This stufffff///////////
+    compFunctionI = trapz(angles,compFunction,nangTot);
+    
+    compFunctionC[0] = 0.0;
+    for (int i = 1; i<nangTot; i++){
+        compFunctionC[i] = compFunctionC[i-1]+(angles[i]-angles[i-1])*0.5*(compFunction[i]+compFunction[i-1]);
+    }
+    
+    for (int i = 1; i<nangTot; i++){
+        compFunctionC[i] = compFunctionC[i]/compFunctionI;
+        //cout<<compFunction[i]<<endl;
 
-
+    }
+    
+    
+    vector<double> compFunctionVec (compFunctionC, compFunctionC+sizeof(compFunctionC) / sizeof(compFunctionC[0]));
+    vector<double> anglesVec (angles, angles+sizeof(angles) / sizeof(angles[0]));
+    
+    tk::spline splComp; //define the spline for the comparison function
+    splComp.set_points(compFunctionVec, anglesVec);
+    
+    //cout<<splComp(.99999999)<< endl;
     // Photon Tracking and Position Variables //
     double xT; double yT; // variable used to describe the x and y location where a photon intersects the detector plane
     double hitRad; // radial distance away from detector center that photon crosses detector plane
@@ -236,15 +262,26 @@ int main (){
 
     // Main Code
     for (int i = 0; i < nPhotons; ++i){      // loop through each individual photon
-        if (i == 1000){
-            cout << i << endl;
-        }
-        if (i == 10000){
-            cout << i << endl;
-        }
+
         if (i == 100000){
             cout << i << endl;
         }
+        if (i == 300000){
+            cout << i << endl;
+        }
+        if (i == 500000){
+            cout << i << endl;
+        }
+        if (i == 700000){
+            cout << i << endl;
+        }
+
+//        if (i == 1000000){
+//            cout << i << endl;
+//        }
+//        if (i == 5000000){
+//            cout << i << endl;
+//        }
 
         // Photon Position and Direction Initialization
         double x1 = 0.0; double y1 = 0.0; double z1 = 0.0; // initialize photon position 1
@@ -320,10 +357,11 @@ int main (){
             }
                 else{
                     do{
-                        theta = acos((2.0*(double)rand() / (RAND_MAX))-1);
+                        theta = splComp((double) rand() / (RAND_MAX));
+//                        cout << theta << endl;
                         phi = ((double) rand() / (RAND_MAX))*2.0*pi;
-                        I0 = s11bar[0]*stokes[0]+s12bar[0]*(stokes[1]*cos(2*phi)+stokes[2]*sin(2*phi));
                         degreei = floor(theta*nangTot/pi);
+                        I0 = s11bar[degreei]*abs(s12bar[degreei]);
                         I = s11bar[degreei]*stokes[0]+s12bar[degreei]*(stokes[1]*cos(2*phi)+stokes[2]*sin(2*phi));
                     }while(((double) rand() / (RAND_MAX))*I0>=I);
 
@@ -338,6 +376,7 @@ int main (){
                             << s12bar[degreei] << s11bar[degreei] << 0 << 0 << arma::endr
                             << 0 << 0 << s33bar[degreei] << s34bar[degreei] << arma::endr
                             << 0 << 0 <<-1*s34bar[degreei]<< s33bar[degreei] << arma::endr;
+                    
                     stokes = updateStokes(stokes, mueller, phi, gamma);
                     
                     // reset position variables
@@ -373,7 +412,7 @@ int main (){
         }
     }
 
-    dBin = 0.5; //bin widths (m)
+    dBin = 0.25; //bin widths (m)
     max = *max_element(distance.begin(), distance.end()); //find the maximum value in the distance vector
     for (int i=0; i<ceil(max/dBin); i++){
         binEdges.push_back(i*dBin+dBin); //create a variable containing the upper bin edge of each distance bin
@@ -754,3 +793,7 @@ double trapz(double x[], double y[], int size){
   s = 0.5*sTemp;
   return s;
 }
+
+
+
+
