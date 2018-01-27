@@ -8,7 +8,7 @@
 #include <chrono>
 #include <vector>
 #include <armadillo>
-#include "spline.h" // https://github.com/ttk592/spline/
+#include "spline.hpp" // https://github.com/ttk592/spline/
 #include <complex>
 
 using namespace std;
@@ -44,6 +44,7 @@ double trapz(double x[], double y[], int size);
 
 // main function
 int main (){
+    cout << "start" << endl;
     auto start=chrono::system_clock::now();
     //////////////////////////// define constants //////////////////////////////////
 
@@ -252,7 +253,7 @@ int main (){
     //nPhotons = 10000 // number of photons to trace
     //Photons = 100000 // number of photons to trace
     //nPhotons = 1000000 // number of photons to trace
-    int nPhotons = 1000000; // number of photons to trace
+    int nPhotons = 10000000; // number of photons to trace
 
     // Predefined Working Variables
 //    mt19937::result_type seed = chrono::high_resolution_clock::now().time_since_epoch().count(); // seed the random number generator
@@ -262,7 +263,11 @@ int main (){
 
     // Main Code
     for (int i = 0; i < nPhotons; ++i){      // loop through each individual photon
-
+        
+        if (i==10){
+            cout << i << endl;
+        }
+        
         if (i == 100000){
             cout << i << endl;
         }
