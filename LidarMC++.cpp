@@ -70,7 +70,7 @@ int main (){
 
     // Refractive Index
     double refMed = 1.33;
-    double refPart = 1.45; //(1.3, 0.008); // relative refractive index
+    double refPart = 1.6; //(1.3, 0.008); // relative refractive index
     double refRel = refPart/refMed;
 
     // Wavelength
@@ -84,7 +84,7 @@ int main (){
     double dang = pi/2/(nang-1);
     double angles[nangTot];
     int degreei; // index for scattering angle theta
-    
+
     for (int i=0; i<nangTot; i++){
         angles[i] = (double)i*dang;
         //cout << angles[i] << endl;
@@ -144,16 +144,16 @@ int main (){
     double s12bar[nangTot];
     double s33bar[nangTot];
     double s34bar[nangTot];
-    
+
     double compFunction[nangTot];
     double compFunctionI;
     double compFunctionC[nangTot];
-    
+
     // Define Distribution //
     double k = 5E18; // differential number concentration at particle size D0
 
     double jungeSlope = 4.0; // slope of the junge distribution
-    
+
     for (int i = 0;i<diamBin; i++){
         diffNumDistribution[i] = k*pow((D[i]/D[0]),(-1*jungeSlope)); // # of particles m^-3 um^-1
     }
@@ -199,25 +199,25 @@ int main (){
     }
     /////// DOcumtnt This stufffff///////////
     compFunctionI = trapz(angles,compFunction,nangTot);
-    
+
     compFunctionC[0] = 0.0;
     for (int i = 1; i<nangTot; i++){
         compFunctionC[i] = compFunctionC[i-1]+(angles[i]-angles[i-1])*0.5*(compFunction[i]+compFunction[i-1]);
     }
-    
+
     for (int i = 1; i<nangTot; i++){
         compFunctionC[i] = compFunctionC[i]/compFunctionI;
         //cout<<compFunction[i]<<endl;
 
     }
-    
-    
+
+
     vector<double> compFunctionVec (compFunctionC, compFunctionC+sizeof(compFunctionC) / sizeof(compFunctionC[0]));
     vector<double> anglesVec (angles, angles+sizeof(angles) / sizeof(angles[0]));
-    
+
     tk::spline splComp; //define the spline for the comparison function
     splComp.set_points(compFunctionVec, anglesVec);
-    
+
     //cout<<splComp(.99999999)<< endl;
     // Photon Tracking and Position Variables //
     double xT; double yT; // variable used to describe the x and y location where a photon intersects the detector plane
@@ -263,11 +263,11 @@ int main (){
 
     // Main Code
     for (int i = 0; i < nPhotons; ++i){      // loop through each individual photon
-        
+
         if (i==10){
             cout << i << endl;
         }
-        
+
         if (i == 100000){
             cout << i << endl;
         }
@@ -310,7 +310,7 @@ int main (){
                << 0 << arma::endr;
 
         while (status == 1 && nScat < 10) {   // while the photon is still alive.....
-            
+
             // Move Photon
             r = -1 * log(((double) rand() / (RAND_MAX)))/c; // generate a random propegation distance
             x2 = x1 + mux1 * r; // update the photon's new x position
@@ -381,9 +381,9 @@ int main (){
                             << s12bar[degreei] << s11bar[degreei] << 0 << 0 << arma::endr
                             << 0 << 0 << s33bar[degreei] << s34bar[degreei] << arma::endr
                             << 0 << 0 <<-1*s34bar[degreei]<< s33bar[degreei] << arma::endr;
-                    
+
                     stokes = updateStokes(stokes, mueller, phi, gamma);
-                    
+
                     // reset position variables
                     x1 = x2;
                     y1 = y2;
@@ -438,31 +438,33 @@ int main (){
     // Write File Header
     myfile.open ("/Users/Brian/Documents/C++/LidarMCplusplus/LidarMC.csv");
     myfile << "LidarMCplusplus.cpp output file:\n";
-    myfile << "Detector Parameters:\n";
-    myfile << "Radius(m) = ";
+    myfile << "Radius(m),";
     myfile << detectorRad;
     myfile << "\n";
-    myfile << "FOV(rad) = ";
+    myfile << "FOV(rad),";
     myfile << FOV;
     myfile << "\n";
-    myfile << "Medium Parameters:";
-    myfile << "\n";
-    myfile << "a(m^-1) = ";
+    myfile << "a(m^-1),";
     myfile << a;
     myfile << "\n";
-    myfile << "b(m^-1) = ";
+    myfile << "b(m^-1),";
     myfile << b;
     myfile << "\n";
-    myfile << "c(m^-1) = ";
+    myfile << "c(m^-1),";
     myfile << c;
     myfile << "\n";
-    myfile << "Run Parameters:\n";
-    myfile << "# of photons = \n";
+    myfile << "Junge,";
+    myfile << jungeSlope;
+    myfile << "\n";
+    myfile << "bulk ref index,";
+    myfile << refRel;
+    myfile << "\n";
+    myfile << "#photons,";
     myfile << nPhotons;
     myfile << "\n";
     myfile << "distance,signal,co,cross\n";
     // Write Signal
-    for (int j=0; j<(signal.size()+1); j++){
+    for (int j=0; j<(signal.size()); j++){
         myfile << binEdges[j]/2;
         myfile << ",";
         myfile << signal[j];
@@ -471,13 +473,13 @@ int main (){
         myfile << ",";
         myfile << signalCROSS[j];
         myfile << "\n";
-    
+
     }
 
     myfile.close();
-    
+
     auto end = chrono::system_clock::now();     // End Time
-    
+
     std::chrono::duration<double> elapsed_seconds = end-start;
     cout<< "elapsed time: " << elapsed_seconds.count() << "s\n";
     return 0;
@@ -798,7 +800,3 @@ double trapz(double x[], double y[], int size){
   s = 0.5*sTemp;
   return s;
 }
-
-
-
-
