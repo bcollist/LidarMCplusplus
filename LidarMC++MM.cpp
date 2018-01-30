@@ -51,27 +51,22 @@ int main (){
     ////// Define Lidar Parameters//////
 
     // Detector Size and FOV //
-    double detectorRad = 1.5E-1; // number of photons to trace
+    double detectorRad = 1.5e-1; // number of photons to trace
     //double scatLimit = 4; // number of scattering events to trace
-    double FOV = deg2Rad(1); // half-angle FOV; enter in degrees -> converts to rad
+    double FOV = deg2Rad(20); // half-angle FOV; enter in degrees -> converts to rad
 
     // detector position
     double xd = 0.0; double yd = 0; double zd = 0; // position of the detector in (m)
     double fd; // variable used in detector photon geometry colculations
     double anglei; // angle of intersection between photon and detector plane
 
-    // Define water column IOPs //
-    double a = 0.4; //absorption coefficient (m^-^1)
-    double b = 0.4; //scattering coefficient (m^-^1)
-    double c = a + b; //bema attenuation coefficient (m^-^1)
-    double omega = b/c; // single scattering albedo
+    // // Define water column IOPs //
+    // double a = 0.4; //absorption coefficient (m^-^1)
+    // double b = 0.4; //scattering coefficient (m^-^1)
+    // double c = a + b; //bema attenuation coefficient (m^-^1)
+    // double omega = b/c; // single scattering albedo
 
-    // Define Mie Parameters //
-
-    // Refractive Index
-    double refMed = 1.33;
-    double refPart = 1.45; //(1.3, 0.008); // relative refractive index
-    double refRel = refPart/refMed;
+    // Define Mie Parameters
 
     // Wavelength
     double lambda = 0.532; // lidar wavelength in a vaccuum (um)
@@ -90,31 +85,81 @@ int main (){
         //cout << angles[i] << endl;
     }
 
-    // Particle Size Distribution Parameters
+
+    // Particle Classes //
+
+
+    // Refractive Index
+    double refPhyto = 1.05;
+    double refDetritus = 1.08;
+    double refMineral = 1.16;
 
     // Set PSD parameters
-    double Dmin = 0.1; // minimum particle diameter (um);
-    double Dmax = 150.0; // maximum particle diameter (um);
     int diamBin = 100; // # of diameter bins;
     double fac = pow((Dmax/Dmin),(1.0/(diamBin-1.0))); // exponential factor necessary for defining logarithmically spaced diameter bins
 
+    double DminPhyto = 0.1; // minimum particle diameter (um);
+    double DmaxPhyto = 150.0; // maximum particle diameter (um);
+
+    double DminDetritus = 0.1; // minimum particle diameter (um);
+    double DmaxDetritus = 150.0; // maximum particle diameter (um);
+
+    double DminMineral = 0.1; // minimum particle diameter (um);
+    double DmaxMineral = 150.0; // maximum particle diameter (um);
+
     // Initialize Particle Size Arrays
-    double D[diamBin]; double radius[diamBin]; double sizeParam[diamBin];
-    double diffNumDistribution[diamBin];
+    double DPhyto[diamBin];
+    double DDetritus[diamBin];
+    double DMineral[diamBin];
+
+    double radiusPhyto[diamBin];
+    double radiusDetritus[diamBin];
+    double radiusMineral[diamBin];
+
+    double sizeParamPhyto[diamBin];
+    double sizeParamDetritus[diamBin];
+    double sizeParamMineral[diamBin];
+
+    double diffNumDistributionPhyto[diamBin];
+    double diffNumDistributionDetritus[diamBin];
+    double diffNumDistributionMineral[diamBin];
+
 
     // Set PSD array values/Users/Brian/Documents/C++/LidarMCplusplus/LidarMC++.cpp
 
     // Diameter Array
     for (int i=0; i<diamBin; i++){ // generate an array of particle diameters
-      D[i]=Dmin*pow(fac,(i)); // define the diameter bins
+      DPhyto[i]=DminPhyto*pow(fac,(i)); // define the diameter bins
+      DDetritus[i]=DminDetritus*pow(fac,(i)); // define the diameter bins
+      DMineral[i]=DminMineral*pow(fac,(i)); // define the diameter bins
     }
+
     // Radius Array
     for (int i=0; i<diamBin; i++){ // generate an array of particle diameters
-      radius[i]=D[i]/2; // define the diameter bins
+      radiusPhyto[i]=DPhyto[i]/2; // define the diameter bins
+      radiusDetritus[i]=Detritus[i]/2; // define the diameter bins
+      radiusMineral[i]=DMineral[i]/2; // define the diameter bins
     }
+
     // Size Parameter Array
     for (int i=0; i<diamBin; i++){ // generate an array of size parameters
-      sizeParam[i] = 2*pi*radius[i]*refMed / lambda; // mie theory size parameter
+      sizeParamPhyto[i] = 2*pi*radiusPhyto[i]*refMed / lambda; // mie theory size parameter
+      sizeParamDetritus[i] = 2*pi*radiusDetritus[i]*refMed / lambda; // mie theory size parameter
+      sizeParamMineral[i] = 2*pi*radiusMineral[i]*refMed / lambda; // mie theory size parameter
+    }
+
+    // Define Distributions //
+    double k = 5E18; // differential number concentration at particle size D0
+
+    double jungePhyto = 4.0; // slope of the junge distribution
+    double jungeDetritus = 4.0;
+    double jungeMineral = 4.0;
+
+    for (int i = 0;i<diamBin; i++){
+        diffNumDistributionPhyto[i] = k*pow((D[i]/D[0]),(-1*jungeSlope)); // # of particles m^-3 um^-1
+        diffNumDistributionDetritus[i] = k*pow((D[i]/D[0]),(-1*jungeSlope)); // # of particles m^-3 um^-1
+        diffNumDistributionMineral[i] = k*pow((D[i]/D[0]),(-1*jungeSlope)); // # of particles m^-3 um^-1
+
     }
 
     // Define Mie Output Variables and Pointers
@@ -149,20 +194,15 @@ int main (){
     double compFunctionI;
     double compFunctionC[nangTot];
 
-    // Define Distribution //
-    double k = 5E18; // differential number concentration at particle size D0
 
-    double jungeSlope = 4.0; // slope of the junge distribution
-
-    for (int i = 0;i<diamBin; i++){
-        diffNumDistribution[i] = k*pow((D[i]/D[0]),(-1*jungeSlope)); // # of particles m^-3 um^-1
-    }
 
 //    for (int i = 0; i<diamBin; i++){
 //    }
 /////////////////// Bulk Mie Calculations /////////////////////
     // Mie Calculations for Each Size Parameter in the distribution
     //j+1 is used to convert from fortran indexing to c++indexing
+
+
     for (int i = 0; i<diamBin; i++){
       bhmie(sizeParam[i],refRel,nang,Qscat_p, Qext_p, Qback_p, S1_p, S2_p);
 
@@ -207,24 +247,16 @@ int main (){
 
     for (int i = 1; i<nangTot; i++){
         compFunctionC[i] = compFunctionC[i]/compFunctionI;
-        //cout<<compFunctionC[i]<<endl;
+        //cout<<compFunction[i]<<endl;
 
     }
 
 
     vector<double> compFunctionVec (compFunctionC, compFunctionC+sizeof(compFunctionC) / sizeof(compFunctionC[0]));
-    //vector<double> s11barVec (s11bar, s11bar+sizeof(s11bar) / sizeof(s11bar[0]));
-    //vector<double> s12barVec (s12bar, s12bar+sizeof(s12bar) / sizeof(s12bar[0]));
-
     vector<double> anglesVec (angles, angles+sizeof(angles) / sizeof(angles[0]));
 
     tk::spline splComp; //define the spline for the comparison function
-    //tk::spline splS11;
-    //k::spline splS12;
-
     splComp.set_points(compFunctionVec, anglesVec);
-    //splS11.set_points(s11barVec, anglesVec);
-    //splS12.set_points(s12barVec, anglesVec);
 
     //cout<<splComp(.99999999)<< endl;
     // Photon Tracking and Position Variables //
@@ -344,6 +376,7 @@ int main (){
                     // Did the photon hit the detector within the FOV?
                     if(anglei <= FOV){      // yes, if the intersection angle is less than the 1/2 angle FOV
 
+
                         // Create unpolarized signal
                         rTotal = rTotal - (r-(fd *r )); // calculate the distance;
                         signalWeight.push_back(weight); // append photon weight (omega^n) to signal weight vector
@@ -391,7 +424,6 @@ int main (){
                     stokes = updateStokes(stokes, mueller, phi, gamma);
 
                     // reset position variables
-                    // cout << x1 << "," << y1 << "," << z1 <<endl;
                     x1 = x2;
                     y1 = y2;
                     z1 = z2;
@@ -410,14 +442,14 @@ int main (){
 
                     // Photon Termination Roulette - allows for conservation of energy with unbiased photon termination //
 
-                    // if (weight < 0.01){ // unbiased roulette termination
-                    //     if (rand() < threshold){
-                    //         weight = weight * threshold;
-                    //     }
-                    //     else {
-                    //         status = 0;
-                    //     }
-                    // }
+                    if (weight < 0.01){ // unbiased roulette termination
+                        if (rand() < threshold){
+                            weight = weight * threshold;
+                        }
+                        else {
+                            status = 0;
+                        }
+                    }
 
                 }
 
@@ -443,7 +475,7 @@ int main (){
 
     ofstream myfile;
     // Write File Header
-    myfile.open ("LidarMC.csv");
+    myfile.open ("/Users/Brian/Documents/C++/LidarMCplusplus/LidarMC.csv");
     myfile << "LidarMCplusplus.cpp output file:\n";
     myfile << "Radius(m),";
     myfile << detectorRad;
