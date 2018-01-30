@@ -309,7 +309,7 @@ int main (){
         double rTotal = 0; // total pathlength variable
         double nScat = 0; // number of scattering events so far
         double weight = 1; // weight of a photon
-        double threshold = 0.1; // 1/10 photons will survive the roulette sequence
+        double threshold = 0.01; // 1/10 photons will survive the roulette sequence
 
         // Polarization
         stokes << 1 << arma::endr     // initialize vertically polarized photon
@@ -317,7 +317,7 @@ int main (){
                << 0 << arma::endr
                << 0 << arma::endr;
 
-        while (status == 1 && nScat < 10) {   // while the photon is still alive.....
+        while (status == 1) {   // while the photon is still alive.....
 
             // Move Photon
             r = -1 * log(((double) rand() / (RAND_MAX)))/c; // generate a random propegation distance
@@ -408,16 +408,16 @@ int main (){
                     nScat = nScat+1; // update the number of scattering events
                     weight = weight * omega; // update weight variable
 
-                    // Photon Termination Roulette - allows for conservation of energy with unbiased photon termination //
+                     //Photon Termination Roulette - allows for conservation of energy with unbiased photon termination //
 
-                    // if (weight < 0.01){ // unbiased roulette termination
-                    //     if (rand() < threshold){
-                    //         weight = weight * threshold;
-                    //     }
-                    //     else {
-                    //         status = 0;
-                    //     }
-                    // }
+                     if (weight < threshold){ // unbiased roulette termination
+                         if (rand() < 0.1){
+                             weight = weight / 0.1;
+                         }
+                         else {
+                             status = 0;
+                         }
+                     }
 
                 }
 
