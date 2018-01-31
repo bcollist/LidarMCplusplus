@@ -70,8 +70,8 @@ int main (){
 
     // Refractive Index
     double refMed = 1.33;
-    double refPart = 1.45; //(1.3, 0.008); // relative refractive index
-    double refRel = refPart/refMed;
+    //double refPart = 1.45; //(1.3, 0.008); // relative refractive index
+    double refRel = 1.08;//refPart/refMed;
 
     // Wavelength
     double lambda = 0.532; // lidar wavelength in a vaccuum (um)
@@ -196,6 +196,7 @@ int main (){
     s33bar[i] = (1.0/(kMed*kMed)) * trapz(sizeParam,integrandArray33,diamBin);
     s34bar[i] = (1.0/(kMed*kMed)) * trapz(sizeParam,integrandArray34,diamBin);
     compFunction[i] = (s11bar[i] + abs(s12bar[i]));
+    cout<< s33bar[i] << endl;
     }
     /////// DOcumtnt This stufffff///////////
     compFunctionI = trapz(angles,compFunction,nangTot);

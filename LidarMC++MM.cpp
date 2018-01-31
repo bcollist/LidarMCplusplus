@@ -80,8 +80,6 @@ int main (){
     ref[min_i] = 1.16;
 
     double refMed = 1.33;
-    double refPart = 1.45; //(1.3, 0.008); // relative refractive index
-    double refRel = refPart/refMed;
 
     // Wavelength
     double lambda = 0.532; // lidar wavelength in a vaccuum (um)
@@ -175,18 +173,18 @@ int main (){
 
     for (int i = 0; i<nClass; i++){
       for (int j = 0;j<diamBin; j++){
-        diffNumDistribution[j][i] = k*pow((D[i]/D[0]),(-1*jungeSlope[i])); // # of particles m^-3 um^-}
+        diffNumDistribution[j][i] = k*pow((D[j]/D[0]),(-1*jungeSlope[i])); // # of particles m^-3 um^-}
       }
     }
 
-//    for (int i = 0; i<diamBin; i++){
-//    }
 /////////////////// Bulk Mie Calculations /////////////////////
     // Mie Calculations for Each Size Parameter in the distribution
     //j+1 is used to convert from fortran indexing to c++indexing
-    for (int ii = 0; ii<nClass; ii++){
-      for (int i = 0; i<diamBin; i++){
-        bhmie(sizeParam[i],refRel,nang,Qscat_p, Qext_p, Qback_p, S1_p, S2_p);
+    for (int ii = 0; ii<nClass; ii++){ // loop throught each sie class
+
+      for (int i = 0; i<diamBin; i++){ // loop through each diameter bin
+
+        bhmie(sizeParam[i],ref[ii],nang,Qscat_p, Qext_p, Qback_p, S1_p, S2_p); // mie calculations for particle calss [ii]
 
         for (int j = 0; j<nangTot; j++){
           s11[j][i] = 0.5 * (pow(abs(S2[j+1]),2) + pow(abs(S1[j+1]),2));
@@ -212,26 +210,28 @@ int main (){
           integrandArray33[j] = integrandS33[i][j];
           integrandArray34[j] = integrandS34[i][j];
         }
-      s11bar[i][ii] = (1.0/(kMed*kMed)) * trapz(sizeParam,integrandArray11,diamBin);
-      s12bar[i][ii] = (1.0/(kMed*kMed)) * trapz(sizeParam,integrandArray12,diamBin);
-      s33bar[i][ii] = (1.0/(kMed*kMed)) * trapz(sizeParam,integrandArray33,diamBin);
-      s34bar[i][ii] = (1.0/(kMed*kMed)) * trapz(sizeParam,integrandArray34,diamBin);
+      s11bar[i][ii] = (1.0/(kMed*kMed)) * trapz(sizeParam,integrandArray11,diamBin); //validated
+      s12bar[i][ii] = (1.0/(kMed*kMed)) * trapz(sizeParam,integrandArray12,diamBin); //validated
+      s33bar[i][ii] = (1.0/(kMed*kMed)) * trapz(sizeParam,integrandArray33,diamBin); //validated
+      s34bar[i][ii] = (1.0/(kMed*kMed)) * trapz(sizeParam,integrandArray34,diamBin); //validated
+      }
+    }
+
+
+    for (int i = 0; i<nangTot; i++){
+      for (int j = 0; j<nClass; j++){
+        s11barBulk[i] += s11bar[i][j]; //validated
+        s12barBulk[i] += s12bar[i][j]; //validated
+        s33barBulk[i] += s33bar[i][j]; //validated
+        s34barBulk[i] += s34bar[i][j]; //validated
       }
     }
 
     for (int i = 0; i<nangTot; i++){
-      for (int j = 0; j<nClass; j++){
-        s11barBulk[i] += s11bar[i][j];
-        s12barBulk[i] += s12bar[i][j];
-        s33barBulk[i] += s33bar[i][j];
-        s34barBulk[i] += s34bar[i][j];
-      }
+      compFunction[i] = (s11barBulk[i] + abs(s12barBulk[i]));
     }
 
-
-    //compFunction[i] = (s11barBulk[i] + abs(s12barBulk[i]));
-
-    /////// DOcumtnt This stufffff///////////
+    /////// Document This Stufffff///////////
     compFunctionI = trapz(angles,compFunction,nangTot);
 
     compFunctionC[0] = 0.0;
