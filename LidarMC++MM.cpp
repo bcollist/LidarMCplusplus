@@ -51,22 +51,37 @@ int main (){
     ////// Define Lidar Parameters//////
 
     // Detector Size and FOV //
-    double detectorRad = 1.5e-1; // number of photons to trace
+    double detectorRad = 1.5E-1; // number of photons to trace
     //double scatLimit = 4; // number of scattering events to trace
-    double FOV = deg2Rad(20); // half-angle FOV; enter in degrees -> converts to rad
+    double FOV = deg2Rad(1); // half-angle FOV; enter in degrees -> converts to rad
 
     // detector position
     double xd = 0.0; double yd = 0; double zd = 0; // position of the detector in (m)
     double fd; // variable used in detector photon geometry colculations
     double anglei; // angle of intersection between photon and detector plane
 
-    // // Define water column IOPs //
-    // double a = 0.4; //absorption coefficient (m^-^1)
-    // double b = 0.4; //scattering coefficient (m^-^1)
-    // double c = a + b; //bema attenuation coefficient (m^-^1)
-    // double omega = b/c; // single scattering albedo
+    // Define water column IOPs //
+    double a = 0.4; //absorption coefficient (m^-^1)
+    double b = 0.4; //scattering coefficient (m^-^1)
+    double c = a + b; //bema attenuation coefficient (m^-^1)
+    double omega = b/c; // single scattering albedo
 
-    // Define Mie Parameters
+    // Define Mie Parameters //
+    int nClass = 3;
+
+    int phy_i = 0;
+    int det_i = 1;
+    int min_i = 2;
+
+    // Refractive Index
+    double ref[nClass];
+    ref[phy_i] = 1.05;
+    ref[det_i] = 1.08;
+    ref[min_i] = 1.16;
+
+    double refMed = 1.33;
+    double refPart = 1.45; //(1.3, 0.008); // relative refractive index
+    double refRel = refPart/refMed;
 
     // Wavelength
     double lambda = 0.532; // lidar wavelength in a vaccuum (um)
@@ -85,81 +100,31 @@ int main (){
         //cout << angles[i] << endl;
     }
 
-
-    // Particle Classes //
-
-
-    // Refractive Index
-    double refPhyto = 1.05;
-    double refDetritus = 1.08;
-    double refMineral = 1.16;
+    // Particle Size Distribution Parameters
 
     // Set PSD parameters
+    double Dmin = 0.1; // minimum particle diameter (um);
+    double Dmax = 150.0; // maximum particle diameter (um);
     int diamBin = 100; // # of diameter bins;
     double fac = pow((Dmax/Dmin),(1.0/(diamBin-1.0))); // exponential factor necessary for defining logarithmically spaced diameter bins
 
-    double DminPhyto = 0.1; // minimum particle diameter (um);
-    double DmaxPhyto = 150.0; // maximum particle diameter (um);
-
-    double DminDetritus = 0.1; // minimum particle diameter (um);
-    double DmaxDetritus = 150.0; // maximum particle diameter (um);
-
-    double DminMineral = 0.1; // minimum particle diameter (um);
-    double DmaxMineral = 150.0; // maximum particle diameter (um);
-
     // Initialize Particle Size Arrays
-    double DPhyto[diamBin];
-    double DDetritus[diamBin];
-    double DMineral[diamBin];
-
-    double radiusPhyto[diamBin];
-    double radiusDetritus[diamBin];
-    double radiusMineral[diamBin];
-
-    double sizeParamPhyto[diamBin];
-    double sizeParamDetritus[diamBin];
-    double sizeParamMineral[diamBin];
-
-    double diffNumDistributionPhyto[diamBin];
-    double diffNumDistributionDetritus[diamBin];
-    double diffNumDistributionMineral[diamBin];
-
+    double D[diamBin]; double radius[diamBin]; double sizeParam[diamBin];
+    double diffNumDistribution[diamBin][nClass];
 
     // Set PSD array values/Users/Brian/Documents/C++/LidarMCplusplus/LidarMC++.cpp
 
     // Diameter Array
     for (int i=0; i<diamBin; i++){ // generate an array of particle diameters
-      DPhyto[i]=DminPhyto*pow(fac,(i)); // define the diameter bins
-      DDetritus[i]=DminDetritus*pow(fac,(i)); // define the diameter bins
-      DMineral[i]=DminMineral*pow(fac,(i)); // define the diameter bins
+      D[i]=Dmin*pow(fac,(i)); // define the diameter bins
     }
-
     // Radius Array
     for (int i=0; i<diamBin; i++){ // generate an array of particle diameters
-      radiusPhyto[i]=DPhyto[i]/2; // define the diameter bins
-      radiusDetritus[i]=Detritus[i]/2; // define the diameter bins
-      radiusMineral[i]=DMineral[i]/2; // define the diameter bins
+      radius[i]=D[i]/2; // define the diameter bins
     }
-
     // Size Parameter Array
     for (int i=0; i<diamBin; i++){ // generate an array of size parameters
-      sizeParamPhyto[i] = 2*pi*radiusPhyto[i]*refMed / lambda; // mie theory size parameter
-      sizeParamDetritus[i] = 2*pi*radiusDetritus[i]*refMed / lambda; // mie theory size parameter
-      sizeParamMineral[i] = 2*pi*radiusMineral[i]*refMed / lambda; // mie theory size parameter
-    }
-
-    // Define Distributions //
-    double k = 5E18; // differential number concentration at particle size D0
-
-    double jungePhyto = 4.0; // slope of the junge distribution
-    double jungeDetritus = 4.0;
-    double jungeMineral = 4.0;
-
-    for (int i = 0;i<diamBin; i++){
-        diffNumDistributionPhyto[i] = k*pow((D[i]/D[0]),(-1*jungeSlope)); // # of particles m^-3 um^-1
-        diffNumDistributionDetritus[i] = k*pow((D[i]/D[0]),(-1*jungeSlope)); // # of particles m^-3 um^-1
-        diffNumDistributionMineral[i] = k*pow((D[i]/D[0]),(-1*jungeSlope)); // # of particles m^-3 um^-1
-
+      sizeParam[i] = 2*pi*radius[i]*refMed / lambda; // mie theory size parameter
     }
 
     // Define Mie Output Variables and Pointers
@@ -185,58 +150,87 @@ int main (){
     double integrandArray33[diamBin];
     double integrandArray34[diamBin];
 
-    double s11bar[nangTot];
-    double s12bar[nangTot];
-    double s33bar[nangTot];
-    double s34bar[nangTot];
+    double s11bar[nangTot][nClass];
+    double s12bar[nangTot][nClass];
+    double s33bar[nangTot][nClass];
+    double s34bar[nangTot][nClass];
+
+    double s11barBulk[nangTot];
+    double s12barBulk[nangTot];
+    double s33barBulk[nangTot];
+    double s34barBulk[nangTot];
 
     double compFunction[nangTot];
     double compFunctionI;
     double compFunctionC[nangTot];
 
+    // Define Distribution //
+    double k = 5E18; // differential number concentration at particle size D0
 
+    double jungeSlope[nClass] = {};
+    jungeSlope[phy_i] = 4.0; // slope of the junge distribution
+    jungeSlope[det_i] = 4.0; // slope of the junge distribution
+    jungeSlope[min_i] = 4.0; // slope of the junge distribution
+
+
+    for (int i = 0; i<nClass; i++){
+      for (int j = 0;j<diamBin; j++){
+        diffNumDistribution[j][i] = k*pow((D[i]/D[0]),(-1*jungeSlope[i])); // # of particles m^-3 um^-}
+      }
+    }
 
 //    for (int i = 0; i<diamBin; i++){
 //    }
 /////////////////// Bulk Mie Calculations /////////////////////
     // Mie Calculations for Each Size Parameter in the distribution
     //j+1 is used to convert from fortran indexing to c++indexing
+    for (int ii = 0; ii<nClass; ii++){
+      for (int i = 0; i<diamBin; i++){
+        bhmie(sizeParam[i],refRel,nang,Qscat_p, Qext_p, Qback_p, S1_p, S2_p);
 
+        for (int j = 0; j<nangTot; j++){
+          s11[j][i] = 0.5 * (pow(abs(S2[j+1]),2) + pow(abs(S1[j+1]),2));
+          s12[j][i] = 0.5 * (pow(abs(S2[j+1]),2) - pow(abs(S1[j+1]),2));
+          s33[j][i] = real(S1[j+1]*conj(S2[j+1]));
+          s34[j][i] = imag(S2[j+1]*conj(S1[j+1]));
+        }
+      }
+      // Define integrand to calculate bulk mueller atrix propertie
+      for (int i=0; i<diamBin; i++){
+        for (int j=0; j<nangTot; j++){
+          integrandS11[j][i] = diffNumDistribution[i][ii] * s11[j][i]; // good
+          integrandS12[j][i] = diffNumDistribution[i][ii] * s12[j][i]; // good
+          integrandS33[j][i] = diffNumDistribution[i][ii] * s33[j][i]; // good
+          integrandS34[j][i] = diffNumDistribution[i][ii] * s34[j][i]; // good
+        }
+      }
 
-    for (int i = 0; i<diamBin; i++){
-      bhmie(sizeParam[i],refRel,nang,Qscat_p, Qext_p, Qback_p, S1_p, S2_p);
-
-      for (int j = 0; j<nangTot; j++){
-        s11[j][i] = 0.5 * (pow(abs(S2[j+1]),2) + pow(abs(S1[j+1]),2));
-        s12[j][i] = 0.5 * (pow(abs(S2[j+1]),2) - pow(abs(S1[j+1]),2));
-        s33[j][i] = real(S1[j+1]*conj(S2[j+1]));
-        s34[j][i] = imag(S2[j+1]*conj(S1[j+1]));
+      for (int i=0; i<nangTot; i++){
+        for (int j=0; j<diamBin; j++){
+          integrandArray11[j] = integrandS11[i][j];
+          integrandArray12[j] = integrandS12[i][j];
+          integrandArray33[j] = integrandS33[i][j];
+          integrandArray34[j] = integrandS34[i][j];
+        }
+      s11bar[i][ii] = (1.0/(kMed*kMed)) * trapz(sizeParam,integrandArray11,diamBin);
+      s12bar[i][ii] = (1.0/(kMed*kMed)) * trapz(sizeParam,integrandArray12,diamBin);
+      s33bar[i][ii] = (1.0/(kMed*kMed)) * trapz(sizeParam,integrandArray33,diamBin);
+      s34bar[i][ii] = (1.0/(kMed*kMed)) * trapz(sizeParam,integrandArray34,diamBin);
       }
     }
 
-    // Define integrand to calculate bulk mueller atrix properties
-    for (int i=0; i<diamBin; i++){
-      for (int j=0; j<nangTot; j++){
-        integrandS11[j][i] = diffNumDistribution[i] * s11[j][i]; // good
-        integrandS12[j][i] = diffNumDistribution[i] * s12[j][i]; // good
-        integrandS33[j][i] = diffNumDistribution[i] * s33[j][i]; // good
-        integrandS34[j][i] = diffNumDistribution[i] * s34[j][i]; // good
+    for (int i = 0; i<nangTot; i++){
+      for (int j = 0; j<nClass; j++){
+        s11barBulk[i] += s11bar[i][j];
+        s12barBulk[i] += s12bar[i][j];
+        s33barBulk[i] += s33bar[i][j];
+        s34barBulk[i] += s34bar[i][j];
       }
     }
 
-    for (int i=0; i<nangTot; i++){
-      for (int j=0; j<diamBin; j++){
-        integrandArray11[j] = integrandS11[i][j];
-        integrandArray12[j] = integrandS12[i][j];
-        integrandArray33[j] = integrandS33[i][j];
-        integrandArray34[j] = integrandS34[i][j];
-      }
-    s11bar[i] = (1.0/(kMed*kMed)) * trapz(sizeParam,integrandArray11,diamBin);
-    s12bar[i] = (1.0/(kMed*kMed)) * trapz(sizeParam,integrandArray12,diamBin);
-    s33bar[i] = (1.0/(kMed*kMed)) * trapz(sizeParam,integrandArray33,diamBin);
-    s34bar[i] = (1.0/(kMed*kMed)) * trapz(sizeParam,integrandArray34,diamBin);
-    compFunction[i] = (s11bar[i] + abs(s12bar[i]));
-    }
+
+    //compFunction[i] = (s11barBulk[i] + abs(s12barBulk[i]));
+
     /////// DOcumtnt This stufffff///////////
     compFunctionI = trapz(angles,compFunction,nangTot);
 
@@ -247,16 +241,24 @@ int main (){
 
     for (int i = 1; i<nangTot; i++){
         compFunctionC[i] = compFunctionC[i]/compFunctionI;
-        //cout<<compFunction[i]<<endl;
+        //cout<<compFunctionC[i]<<endl;
 
     }
 
 
     vector<double> compFunctionVec (compFunctionC, compFunctionC+sizeof(compFunctionC) / sizeof(compFunctionC[0]));
+    //vector<double> s11barVec (s11bar, s11bar+sizeof(s11bar) / sizeof(s11bar[0]));
+    //vector<double> s12barVec (s12bar, s12bar+sizeof(s12bar) / sizeof(s12bar[0]));
+
     vector<double> anglesVec (angles, angles+sizeof(angles) / sizeof(angles[0]));
 
     tk::spline splComp; //define the spline for the comparison function
+    //tk::spline splS11;
+    //k::spline splS12;
+
     splComp.set_points(compFunctionVec, anglesVec);
+    //splS11.set_points(s11barVec, anglesVec);
+    //splS12.set_points(s12barVec, anglesVec);
 
     //cout<<splComp(.99999999)<< endl;
     // Photon Tracking and Position Variables //
@@ -341,7 +343,7 @@ int main (){
         double rTotal = 0; // total pathlength variable
         double nScat = 0; // number of scattering events so far
         double weight = 1; // weight of a photon
-        double threshold = 0.1; // 1/10 photons will survive the roulette sequence
+        double threshold = 0.01; // 1/10 photons will survive the roulette sequence
 
         // Polarization
         stokes << 1 << arma::endr     // initialize vertically polarized photon
@@ -349,7 +351,7 @@ int main (){
                << 0 << arma::endr
                << 0 << arma::endr;
 
-        while (status == 1 && nScat < 10) {   // while the photon is still alive.....
+        while (status == 1) {   // while the photon is still alive.....
 
             // Move Photon
             r = -1 * log(((double) rand() / (RAND_MAX)))/c; // generate a random propegation distance
@@ -375,7 +377,6 @@ int main (){
 
                     // Did the photon hit the detector within the FOV?
                     if(anglei <= FOV){      // yes, if the intersection angle is less than the 1/2 angle FOV
-
 
                         // Create unpolarized signal
                         rTotal = rTotal - (r-(fd *r )); // calculate the distance;
@@ -405,8 +406,8 @@ int main (){
                         theta = splComp((double) rand() / (RAND_MAX));
                         phi = ((double) rand() / (RAND_MAX))*2.0*pi;
                         degreei = floor(theta*nangTot/pi);
-                        I0 = s11bar[degreei]+abs(s12bar[degreei]);
-                        I = s11bar[degreei]+s12bar[degreei]*(stokes[1]*cos(2*phi)+stokes[2]*sin(2*phi))/stokes[0];
+                        I0 = s11barBulk[degreei]+abs(s12barBulk[degreei]);
+                        I = s11barBulk[degreei]+s12barBulk[degreei]*(stokes[1]*cos(2*phi)+stokes[2]*sin(2*phi))/stokes[0];
                     }while(((double) rand() / (RAND_MAX))*I0>=I);
 
                     mux2 = updateDirCosX(theta, phi, mux1, muy1, muz1); // update the photon X direction cosine
@@ -416,14 +417,15 @@ int main (){
                     // Update Polarization Variables
                     gamma = gammaCalc(muz1, muz2, theta, phi); // update reference frame rotation angle
 
-                    mueller << s11bar[degreei] << s12bar[degreei] << 0 << 0 << arma::endr
-                            << s12bar[degreei] << s11bar[degreei] << 0 << 0 << arma::endr
-                            << 0 << 0 << s33bar[degreei] << s34bar[degreei] << arma::endr
-                            << 0 << 0 <<-1*s34bar[degreei]<< s33bar[degreei] << arma::endr;
+                    mueller << s11barBulk[degreei] << s12barBulk[degreei] << 0 << 0 << arma::endr
+                            << s12barBulk[degreei] << s11barBulk[degreei] << 0 << 0 << arma::endr
+                            << 0 << 0 << s33barBulk[degreei] << s34barBulk[degreei] << arma::endr
+                            << 0 << 0 <<-1*s34barBulk[degreei]<< s33barBulk[degreei] << arma::endr;
 
                     stokes = updateStokes(stokes, mueller, phi, gamma);
 
                     // reset position variables
+                    // cout << x1 << "," << y1 << "," << z1 <<endl;
                     x1 = x2;
                     y1 = y2;
                     z1 = z2;
@@ -440,16 +442,16 @@ int main (){
                     nScat = nScat+1; // update the number of scattering events
                     weight = weight * omega; // update weight variable
 
-                    // Photon Termination Roulette - allows for conservation of energy with unbiased photon termination //
+                     //Photon Termination Roulette - allows for conservation of energy with unbiased photon termination //
 
-                    if (weight < 0.01){ // unbiased roulette termination
-                        if (rand() < threshold){
-                            weight = weight * threshold;
-                        }
-                        else {
-                            status = 0;
-                        }
-                    }
+                     if (weight < threshold){ // unbiased roulette termination
+                         if (rand() < 0.1){
+                             weight = weight / 0.1;
+                         }
+                         else {
+                             status = 0;
+                         }
+                     }
 
                 }
 
@@ -475,7 +477,7 @@ int main (){
 
     ofstream myfile;
     // Write File Header
-    myfile.open ("/Users/Brian/Documents/C++/LidarMCplusplus/LidarMC.csv");
+    myfile.open ("LidarMC.csv");
     myfile << "LidarMCplusplus.cpp output file:\n";
     myfile << "Radius(m),";
     myfile << detectorRad;
