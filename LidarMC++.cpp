@@ -38,7 +38,7 @@ arma::mat updateStokes(arma::mat stokes, arma::mat mueller, double phi, double g
 double gammaCalc(double muz1, double muz2, double theta, double phi); // calculate the rotation angle
 
 // Mie Calculations
-int bhmie(double x,double refrel,int nang, double* Qscat_p, double* Qext_p, double* Qback_p, complex<double>* S1_p, complex<double>* S2_p);
+int bhmie(double x, complex<double> refrel, int nang, double* Qscat_p, double* Qext_p, double* Qabs_p, double* Qback_p, complex<double>* S1_p, complex<double>* S2_p);
 
 double trapz(double x[], double y[], int size);
 
@@ -71,7 +71,8 @@ int main (){
     // Refractive Index
     double refMed = 1.33;
     //double refPart = 1.45; //(1.3, 0.008); // relative refractive index
-    double refRel = 1.08;//refPart/refMed;
+    //double refRel = 1.08;//refPart/refMed;
+    complex<double> refRel = complex<double>(1.05,0.006);
 
     // Wavelength
     double lambda = 0.532; // lidar wavelength in a vaccuum (um)
@@ -99,7 +100,8 @@ int main (){
     double fac = pow((Dmax/Dmin),(1.0/(diamBin-1.0))); // exponential factor necessary for defining logarithmically spaced diameter bins
 
     // Initialize Particle Size Arrays
-    double D[diamBin]; double radius[diamBin]; double sizeParam[diamBin];
+    double D[diamBin]; double Dm[diamBin]; //particle diameters in um and m
+    double radius[diamBin]; double sizeParam[diamBin];
     double diffNumDistribution[diamBin];
 
     // Set PSD array values/Users/Brian/Documents/C++/LidarMCplusplus/LidarMC++.cpp
@@ -118,11 +120,16 @@ int main (){
     }
 
     // Define Mie Output Variables and Pointers
-    double Qscat; double Qext; double Qback;  // Mie scattering efficiencies
-    double* Qscat_p = &Qscat; double* Qext_p = &Qext; double* Qback_p = &Qback; // pointers to Mie Scattering efficiencies
-
+    double Qscat; double Qext; double Qabs; double Qback;  // Mie scattering efficiencies
+    double* Qscat_p = &Qscat; double* Qext_p = &Qext; double* Qabs_p = &Qabs; double* Qback_p = &Qback; // pointers to Mie Scattering efficiencies
+    double Qb[diamBin]; double Qc[diamBin]; double Qa[diamBin]; double Qba[diamBin];
     complex<double> S1[2*nang]; complex<double> S2[2*nang];
     complex<double>* S1_p = S1; complex<double>* S2_p = S2;
+
+    //IOP Stufffff
+    double aInt[diamBin];
+    double bInt[diamBin];
+    double cInt[diamBin];
 
     // Mueller Matrix elements
     double s11[nangTot][diamBin];
@@ -150,7 +157,7 @@ int main (){
     double compFunctionC[nangTot];
 
     // Define Distribution //
-    double k = 5E18; // differential number concentration at particle size D0
+    double k = 1E22; // differential number concentration at particle size D0
 
     double jungeSlope = 4.0; // slope of the junge distribution
 
@@ -164,14 +171,18 @@ int main (){
     // Mie Calculations for Each Size Parameter in the distribution
     //j+1 is used to convert from fortran indexing to c++indexing
     for (int i = 0; i<diamBin; i++){
-      bhmie(sizeParam[i],refRel,nang,Qscat_p, Qext_p, Qback_p, S1_p, S2_p);
-
+      bhmie(sizeParam[i], refRel, nang, Qscat_p, Qext_p, Qabs_p, Qback_p, S1_p, S2_p);
+      //cout<<Qext_p[1]-Qscat_p[1]<< endl;
       for (int j = 0; j<nangTot; j++){
         s11[j][i] = 0.5 * (pow(abs(S2[j+1]),2) + pow(abs(S1[j+1]),2));
         s12[j][i] = 0.5 * (pow(abs(S2[j+1]),2) - pow(abs(S1[j+1]),2));
         s33[j][i] = real(S1[j+1]*conj(S2[j+1]));
         s34[j][i] = imag(S2[j+1]*conj(S1[j+1]));
       }
+      Qb[i]=Qscat_p[0];
+      Qa[i]=Qabs_p[0];
+      Qc[i]=Qext_p[0];
+      Qba[i]=Qback_p[0];
     }
 
     // Define integrand to calculate bulk mueller atrix properties
@@ -196,7 +207,6 @@ int main (){
     s33bar[i] = (1.0/(kMed*kMed)) * trapz(sizeParam,integrandArray33,diamBin);
     s34bar[i] = (1.0/(kMed*kMed)) * trapz(sizeParam,integrandArray34,diamBin);
     compFunction[i] = (s11bar[i] + abs(s12bar[i]));
-    cout<< s33bar[i] << endl;
     }
     /////// DOcumtnt This stufffff///////////
     compFunctionI = trapz(angles,compFunction,nangTot);
@@ -209,8 +219,23 @@ int main (){
     for (int i = 1; i<nangTot; i++){
         compFunctionC[i] = compFunctionC[i]/compFunctionI;
         //cout<<compFunctionC[i]<<endl;
-
     }
+
+    // Calculate IOPs
+    for (int i = 0; i<diamBin; i++){
+      bInt[i] = Qb[i] * pi/4 *(D[i]*1E-6)*(D[i]*1E-6) * diffNumDistribution[i];
+      aInt[i] = Qa[i] * pi/4 *(D[i]*1E-6)*(D[i]*1E-6) * diffNumDistribution[i];
+      cInt[i] = Qc[i] * pi/4 *(D[i]*1E-6)*(D[i]*1E-6) * diffNumDistribution[i];
+    }
+    for (int i = 0; i<diamBin; i++){
+      Dm[i] = D[i] * 1E-6;
+    }
+
+    b = trapz(Dm,bInt,diamBin);
+    a = trapz(Dm,aInt,diamBin);
+    cout << b << endl;
+    cout << a << endl;
+    c = trapz(Dm,cInt,diamBin);
 
 
     vector<double> compFunctionVec (compFunctionC, compFunctionC+sizeof(compFunctionC) / sizeof(compFunctionC[0]));
@@ -664,7 +689,7 @@ double gammaCalc(double muz1, double muz2, double theta, double phi){
 
 // Mie Calculations translated from Bohren and Huffman 1998
 
-int bhmie(double x, double refrel, int nang, double* Qscat_p, double* Qext_p, double* Qback_p, complex<double>* S1_p, complex<double>* S2_p){
+int bhmie(double x, complex<double> refrel, int nang, double* Qscat_p, double* Qext_p, double* Qabs_p, double* Qback_p, complex<double>* S1_p, complex<double>* S2_p){
 
     // Variable Definitions
     complex<double> y; double dx; double nstop; double ymod; int nmx; double dang; double theta;
@@ -678,7 +703,7 @@ int bhmie(double x, double refrel, int nang, double* Qscat_p, double* Qext_p, do
     double P; double T;
 
     // Assign variables that will be exported to the value of their pointers
-    double Qscat_f = *Qscat_p; double Qext_f = *Qext_p; double Qback_f = *Qback_p;
+    double Qscat_f = *Qscat_p; double Qext_f = *Qext_p; double Qabs_f = *Qabs_p; double Qback_f = *Qback_p;
 
     // Array Definitions
     double PI[nang+1]; double PI0[nang+1]; double PI1[nang+1];
@@ -777,6 +802,7 @@ int bhmie(double x, double refrel, int nang, double* Qscat_p, double* Qext_p, do
 
     Qscat_f=(2.0/(x*x))*Qscat_f;
     Qext_f=(4.0/(x*x))*real(S1[1]);
+    Qabs_f = Qext_f-Qscat_f;
     //Note: Qback is not Qbb, but the radar back scattering.
     Qback_f=(4.0/(x*x))*(abs(S1[2*nang-1])*abs(S1[2*nang-1]));
     //cout << "Qext_f = " << Qext_f << endl;
@@ -785,8 +811,8 @@ int bhmie(double x, double refrel, int nang, double* Qscat_p, double* Qext_p, do
     // Move scattering efficiencies out of the function
     *Qscat_p = Qscat_f; // update the value of Qscat in main using a pointer
     *Qext_p  = Qext_f; // update the value of Qext in main using a pointer
+    *Qabs_p = Qabs_f;
     *Qback_p = Qback_f; // update the value of Qback in main using a pointer
-
     // Move S1 and S2 out of the function
     for (int i=1; i<=nang*2-1; i++){
       S1_p[i] = S1[i];

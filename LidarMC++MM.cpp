@@ -60,12 +60,6 @@ int main (){
     double fd; // variable used in detector photon geometry colculations
     double anglei; // angle of intersection between photon and detector plane
 
-    // Define water column IOPs //
-    double a = 0.4; //absorption coefficient (m^-^1)
-    double b = 0.4; //scattering coefficient (m^-^1)
-    double c = a + b; //bema attenuation coefficient (m^-^1)
-    double omega = b/c; // single scattering albedo
-
     // Define Mie Parameters //
     int nClass = 3;
 
@@ -163,7 +157,12 @@ int main (){
     double compFunctionC[nangTot];
 
     // Define Distribution //
-    double k = 5E18; // differential number concentration at particle size D0
+    double k[nClass] = {}; // differential number concentration at particle size D0
+    k[nClass] = 5E18; // differential number concentration at particle size D0
+    k[nClass] = 5E18; // differential number concentration at particle size D0
+    k[nClass] = 5E18; // differential number concentration at particle size D0
+
+
 
     double jungeSlope[nClass] = {};
     jungeSlope[phy_i] = 4.0; // slope of the junge distribution
@@ -173,7 +172,7 @@ int main (){
 
     for (int i = 0; i<nClass; i++){
       for (int j = 0;j<diamBin; j++){
-        diffNumDistribution[j][i] = k*pow((D[j]/D[0]),(-1*jungeSlope[i])); // # of particles m^-3 um^-}
+        diffNumDistribution[j][i] = k[i]*pow((D[j]/D[0]),(-1*jungeSlope[i])); // # of particles m^-3 um^-}
       }
     }
 
@@ -193,7 +192,7 @@ int main (){
           s34[j][i] = imag(S2[j+1]*conj(S1[j+1]));
         }
       }
-      // Define integrand to calculate bulk mueller atrix propertie
+      // Define integrand to calculate bulk mueller matrix properties
       for (int i=0; i<diamBin; i++){
         for (int j=0; j<nangTot; j++){
           integrandS11[j][i] = diffNumDistribution[i][ii] * s11[j][i]; // good
@@ -242,8 +241,13 @@ int main (){
     for (int i = 1; i<nangTot; i++){
         compFunctionC[i] = compFunctionC[i]/compFunctionI;
         //cout<<compFunctionC[i]<<endl;
-
     }
+
+    // Define water column IOPs //
+    double a = 0.4; //absorption coefficient (m^-^1)
+    double b = 0.4; //scattering coefficient (m^-^1)
+    double c = a + b; //bema attenuation coefficient (m^-^1)
+    double omega = b/c; // single scattering albedo
 
 
     vector<double> compFunctionVec (compFunctionC, compFunctionC+sizeof(compFunctionC) / sizeof(compFunctionC[0]));
@@ -475,49 +479,49 @@ int main (){
         signalCROSS.at(int(bd/dBin)-1) = signalCROSS[(int(bd/dBin)-1)] + signalCROSSweight[i]; //...add the value of the photon weight to the signal variable at the correct index for its distance bin
     }
 
-    ofstream myfile;
-    // Write File Header
-    myfile.open ("LidarMC.csv");
-    myfile << "LidarMCplusplus.cpp output file:\n";
-    myfile << "Radius(m),";
-    myfile << detectorRad;
-    myfile << "\n";
-    myfile << "FOV(rad),";
-    myfile << FOV;
-    myfile << "\n";
-    myfile << "a(m^-1),";
-    myfile << a;
-    myfile << "\n";
-    myfile << "b(m^-1),";
-    myfile << b;
-    myfile << "\n";
-    myfile << "c(m^-1),";
-    myfile << c;
-    myfile << "\n";
-    myfile << "Junge,";
-    myfile << jungeSlope;
-    myfile << "\n";
-    myfile << "bulk ref index,";
-    myfile << refRel;
-    myfile << "\n";
-    myfile << "#photons,";
-    myfile << nPhotons;
-    myfile << "\n";
-    myfile << "distance,signal,co,cross\n";
-    // Write Signal
-    for (int j=0; j<(signal.size()); j++){
-        myfile << binEdges[j]/2;
-        myfile << ",";
-        myfile << signal[j];
-        myfile << ",";
-        myfile << signalCO[j];
-        myfile << ",";
-        myfile << signalCROSS[j];
-        myfile << "\n";
-
-    }
-
-    myfile.close();
+    // ofstream myfile;
+    // // Write File Header
+    // myfile.open ("LidarMC.csv");
+    // myfile << "LidarMCplusplus.cpp output file:\n";
+    // myfile << "Radius(m),";
+    // myfile << detectorRad;
+    // myfile << "\n";
+    // myfile << "FOV(rad),";
+    // myfile << FOV;
+    // myfile << "\n";
+    // myfile << "a(m^-1),";
+    // myfile << a;
+    // myfile << "\n";
+    // myfile << "b(m^-1),";
+    // myfile << b;
+    // myfile << "\n";
+    // myfile << "c(m^-1),";
+    // myfile << c;
+    // myfile << "\n";
+    // myfile << "Junge,";
+    // myfile << jungeSlope;
+    // myfile << "\n";
+    // myfile << "bulk ref index,";
+    // myfile << refRel;
+    // myfile << "\n";
+    // myfile << "#photons,";
+    // myfile << nPhotons;
+    // myfile << "\n";
+    // myfile << "distance,signal,co,cross\n";
+    // // Write Signal
+    // for (int j=0; j<(signal.size()); j++){
+    //     myfile << binEdges[j]/2;
+    //     myfile << ",";
+    //     myfile << signal[j];
+    //     myfile << ",";
+    //     myfile << signalCO[j];
+    //     myfile << ",";
+    //     myfile << signalCROSS[j];
+    //     myfile << "\n";
+    //
+    // }
+    //
+    // myfile.close();
 
     auto end = chrono::system_clock::now();     // End Time
 
