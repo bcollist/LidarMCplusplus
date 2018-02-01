@@ -60,11 +60,11 @@ int main (){
     double fd; // variable used in detector photon geometry colculations
     double anglei; // angle of intersection between photon and detector plane
 
-    // Define water column IOPs //
-    double a = 0.4; //absorption coefficient (m^-^1)
-    double b = 0.4; //scattering coefficient (m^-^1)
-    double c = a + b; //bema attenuation coefficient (m^-^1)
-    double omega = b/c; // single scattering albedo
+    //  IOPs //
+    double a; //absorption coefficient (m^-^1)
+    double b; //scattering coefficient (m^-^1)
+    double c; //bema attenuation coefficient (m^-^1)
+    double omega; // single scattering albedo
 
     // Define Mie Parameters //
 
@@ -233,9 +233,8 @@ int main (){
 
     b = trapz(Dm,bInt,diamBin);
     a = trapz(Dm,aInt,diamBin);
-    cout << b << endl;
-    cout << a << endl;
     c = trapz(Dm,cInt,diamBin);
+    omega = b/c;
 
 
     vector<double> compFunctionVec (compFunctionC, compFunctionC+sizeof(compFunctionC) / sizeof(compFunctionC[0]));

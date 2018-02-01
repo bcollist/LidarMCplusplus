@@ -158,9 +158,9 @@ int main (){
 
     // Define Distribution //
     double k[nClass] = {}; // differential number concentration at particle size D0
-    k[nClass] = 5E18; // differential number concentration at particle size D0
-    k[nClass] = 5E18; // differential number concentration at particle size D0
-    k[nClass] = 5E18; // differential number concentration at particle size D0
+    k[phy_i] = 5E18; // differential number concentration at particle size D0
+    k[det_i] = 5E18; // differential number concentration at particle size D0
+    k[min_i] = 5E18; // differential number concentration at particle size D0
 
 
 
