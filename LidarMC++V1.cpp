@@ -53,7 +53,7 @@ int main (){
     // Detector Size and FOV //
     double detectorRad = 1.5E-1; // number of photons to trace
     //double scatLimit = 4; // number of scattering events to trace
-    double FOV = deg2Rad(1); // half-angle FOV; enter in degrees -> converts to rad
+    double FOV = deg2Rad(10); // half-angle FOV; enter in degrees -> converts to rad
 
     // detector position
     double xd = 0.0; double yd = 0; double zd = 0; // position of the detector in (m)
@@ -157,7 +157,7 @@ int main (){
     double compFunctionC[nangTot];
 
     // Define Distribution //
-    double k = 1E22; // differential number concentration at particle size D0
+    double k = 5E21; // differential number concentration at particle size D0
 
     double jungeSlope = 4.0; // slope of the junge distribution
 
@@ -206,19 +206,20 @@ int main (){
     s12bar[i] = (1.0/(kMed*kMed)) * trapz(sizeParam,integrandArray12,diamBin);
     s33bar[i] = (1.0/(kMed*kMed)) * trapz(sizeParam,integrandArray33,diamBin);
     s34bar[i] = (1.0/(kMed*kMed)) * trapz(sizeParam,integrandArray34,diamBin);
-    compFunction[i] = (s11bar[i] + abs(s12bar[i]));
-    }
-    /////// DOcumtnt This stufffff///////////
-    compFunctionI = trapz(angles,compFunction,nangTot);
-
-    compFunctionC[0] = 0.0;
-    for (int i = 1; i<nangTot; i++){
-        compFunctionC[i] = compFunctionC[i-1]+(angles[i]-angles[i-1])*0.5*(compFunction[i]+compFunction[i-1]);
+    compFunction[i] = (s11bar[i] + abs(s12bar[i])) * sin(angles[i]);
     }
 
-    for (int i = 1; i<nangTot; i++){
+// Rejection Method From Jallion and Saint-James 2003
+    compFunctionI = trapz(angles,compFunction,nangTot); // find integral of compFunction
+
+    compFunctionC[0] = 0.0; //initialize first element of cumulative comp function
+
+    for (int i = 1; i<nangTot; i++){ // find the cumulative integral of comp function
+      compFunctionC[i] = compFunctionC[i-1]+(angles[i]-angles[i-1])*0.5*(compFunction[i]+compFunction[i-1]);
+    }
+
+    for (int i = 1; i<nangTot; i++){ // normalize the cumulative comp function to the integral
         compFunctionC[i] = compFunctionC[i]/compFunctionI;
-        //cout<<compFunctionC[i]<<endl;
     }
 
     // Calculate IOPs
@@ -273,20 +274,22 @@ int main (){
     double coPol; // temporary variable used to hold the co-polarized value
     double crossPol; // temporary variable used to hold the cross-polarized value
 
-    vector<double> binEdges; // upper edges of signal bins
-    vector<double> signalWeight; // a variable used to hold the weight of each photon reaching the detector
     vector<double> distance; // distance associated with each signal bin
+    vector<double> signalWeight; // a variable used to hold the weight of each photon reaching the detector
     vector<double> signalCOweight; // distance associated with each signal bin
     vector<double> signalCROSSweight; // distance associated with each signal bin
+    vector<double> scatHist; // a variable used to hold the number of scattering events of each photon
+    vector<double> angleDet;
+    vector<double> binEdges;
 
-    double I; double I0;
+    double I; double Irand;
 
     // Mont Carlo parameters
     //nPhotons = 1000 // number of photons to trace
     //nPhotons = 10000 // number of photons to trace
     //Photons = 100000 // number of photons to trace
     //nPhotons = 1000000 // number of photons to trace
-    int nPhotons = 10000000; // number of photons to trace
+    int nPhotons = 100000000; // number of photons to trace
 
     // Predefined Working Variables
 //    mt19937::result_type seed = chrono::high_resolution_clock::now().time_since_epoch().count(); // seed the random number generator
@@ -369,12 +372,14 @@ int main (){
                     // Did the photon hit the detector within the FOV?
                     if(anglei <= FOV){      // yes, if the intersection angle is less than the 1/2 angle FOV
 
-                        // Create unpolarized signal
+                        // Add Pathlength to Distance Vector
                         rTotal = rTotal - (r-(fd *r )); // calculate the distance;
-                        signalWeight.push_back(weight); // append photon weight (omega^n) to signal weight vector
-                        distance.push_back(rTotal); // append the total distance travelled by the photon to the distance vector
-                        // Create polarized signal
+                        distance.push_back(rTotal/2); // append the total distance travelled by the photon to the distance vector
 
+                        // Create unpolarized signal
+                        signalWeight.push_back(weight); // append photon weight (omega^n) to signal weight vector
+
+                        // Create polarized signal
                         // rotate into the detector reference frame
                         detectAngle = atan2(mux1,muy1);
                         rotationDetector  << 1 << 0 << 0 << 0 << arma::endr
@@ -389,6 +394,12 @@ int main (){
 
                         signalCOweight.push_back(coPol);
                         signalCROSSweight.push_back(crossPol);
+
+                        // Create nScat histogram
+                        scatHist.push_back(nScat);
+
+                        // Create detection angle vector
+                        angleDet.push_back(anglei);
                     }
                 }
             }
@@ -397,9 +408,9 @@ int main (){
                         theta = splComp((double) rand() / (RAND_MAX));
                         phi = ((double) rand() / (RAND_MAX))*2.0*pi;
                         degreei = floor(theta*nangTot/pi);
-                        I0 = s11bar[degreei]+abs(s12bar[degreei]);
                         I = s11bar[degreei]+s12bar[degreei]*(stokes[1]*cos(2*phi)+stokes[2]*sin(2*phi))/stokes[0];
-                    }while(((double) rand() / (RAND_MAX))*I0>=I);
+                        Irand = ((double) rand() / (RAND_MAX)) * s11bar[degreei]+abs(s12bar[degreei]);
+                    }while(Irand>=I);
 
                     mux2 = updateDirCosX(theta, phi, mux1, muy1, muz1); // update the photon X direction cosine
                     muy2 = updateDirCosY(theta, phi, mux1, muy1, muz1); // update the photon Y direction cosine
@@ -427,8 +438,6 @@ int main (){
 
                     //cout << mux1*mux1 + muy1*muy1 + muz1*muz1 << endl;
 
-                    nScat = nScat+1; // update the number of scattering events
-
                     // Update Photon Weight
                     nScat = nScat+1; // update the number of scattering events
                     weight = weight * omega; // update weight variable
@@ -437,9 +446,9 @@ int main (){
 
                      if (weight < threshold){ // unbiased roulette termination
                          if (rand() < 0.1){
-                             weight = weight / 0.1;
+                           weight = weight / 0.1;
                          }
-                         else {
+                          else {
                              status = 0;
                          }
                      }
@@ -468,7 +477,7 @@ int main (){
 
     ofstream myfile;
     // Write File Header
-    myfile.open ("LidarMC.csv");
+    myfile.open ("signal.csv");
     myfile << "LidarMCplusplus.cpp output file:\n";
     myfile << "Radius(m),";
     myfile << detectorRad;
@@ -497,7 +506,7 @@ int main (){
     myfile << "distance,signal,co,cross\n";
     // Write Signal
     for (int j=0; j<(signal.size()); j++){
-        myfile << binEdges[j]/2;
+        myfile << binEdges[j];
         myfile << ",";
         myfile << signal[j];
         myfile << ",";
@@ -509,6 +518,54 @@ int main (){
     }
 
     myfile.close();
+
+    ofstream signalfile;
+    // Write File Header
+    signalfile.open ("photon.csv");
+    signalfile << "LidarMCplusplus.cpp output file:\n";
+    signalfile << "Radius(m),";
+    signalfile << detectorRad;
+    signalfile << "\n";
+    signalfile << "FOV(rad),";
+    signalfile << FOV;
+    signalfile << "\n";
+    signalfile << "a(m^-1),";
+    signalfile << a;
+    signalfile << "\n";
+    signalfile << "b(m^-1),";
+    signalfile << b;
+    signalfile << "\n";
+    signalfile << "c(m^-1),";
+    signalfile << c;
+    signalfile << "\n";
+    signalfile << "Junge,";
+    signalfile << jungeSlope;
+    signalfile << "\n";
+    signalfile << "bulk ref index,";
+    signalfile << refRel;
+    signalfile << "\n";
+    signalfile << "#photons,";
+    signalfile << nPhotons;
+    signalfile << "\n";
+    signalfile << "distance,signal,co,cross,nScat,angleDet\n";
+    // Write Signal
+    for (int j=0; j<(distance.size()); j++){
+        signalfile << distance[j];
+        signalfile << ",";
+        signalfile << signalWeight[j];
+        signalfile << ",";
+        signalfile << signalCOweight[j];
+        signalfile << ",";
+        signalfile << signalCROSSweight[j];
+        signalfile << ",";
+        signalfile << scatHist[j];
+        signalfile << ",";
+        signalfile << angleDet[j];
+        signalfile << "\n";
+
+    }
+    signalfile.close();
+
 
     auto end = chrono::system_clock::now();     // End Time
 
@@ -685,6 +742,10 @@ double gammaCalc(double muz1, double muz2, double theta, double phi){
 
     return gamma;
 }
+// Rejection method From Jallion et al. 2003
+
+
+
 
 // Mie Calculations translated from Bohren and Huffman 1998
 
