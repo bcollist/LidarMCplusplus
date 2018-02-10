@@ -10,6 +10,7 @@
 #include <armadillo>
 #include "spline.hpp" // https://github.com/ttk592/spline/
 #include <complex>
+#include <string>
 
 using namespace std;
 
@@ -38,22 +39,39 @@ arma::mat updateStokes(arma::mat stokes, arma::mat mueller, double phi, double g
 double gammaCalc(double muz1, double muz2, double theta, double phi); // calculate the rotation angle
 
 // Mie Calculations
-int bhmie(double x, complex<double> refrel, int nang, double* Qscat_p, double* Qext_p, double* Qabs_p, double* Qback_p, complex<double>* S1_p, complex<double>* S2_p);
+int bhmie(double x, complex<double> refrel, int nang, double* Qscat_p, double* Qext_p, double* Qabs_p, double* Qback_p, complex<double>* S1_p, complex<double>* S2_p); // mie calculations
 
-double trapz(double x[], double y[], int size);
+double trapz(double x[], double y[], int size); // trapezoidal integration function
 
 // main function
 int main (){
     cout << "start" << endl;
-    auto start=chrono::system_clock::now();
+    auto start=chrono::system_clock::now(); // start a timer
     //////////////////////////// define constants //////////////////////////////////
 
+    // Input FIle Parameters
+    string fileID;
+    string photonFile("photon"); // first part of photon tracing filename
+    string signalFile("signal"); // first part of signal trcking filename
+
+    cout<<"Input File Identifier"<<endl;
+    cin>>fileID;
     ////// Define Lidar Parameters//////
 
     // Detector Size and FOV //
     double detectorRad = 1.5E-1; // number of photons to trace
     //double scatLimit = 4; // number of scattering events to trace
-    double FOV = deg2Rad(10); // half-angle FOV; enter in degrees -> converts to rad
+
+    // Predefined FOV
+    //double FOV = deg2Rad(10); // half-angle FOV; enter in degrees -> converts to rad
+
+    // User Input FOV
+    double FOV;  //FOV variable
+    cout<<"Input FOV in Degrees"<<endl;
+    cin>>FOV;
+    FOV=deg2Rad(FOV);
+
+
 
     // detector position
     double xd = 0.0; double yd = 0; double zd = 0; // position of the detector in (m)
@@ -66,13 +84,27 @@ int main (){
     double c; //bema attenuation coefficient (m^-^1)
     double omega; // single scattering albedo
 
+
     // Define Mie Parameters //
 
     // Refractive Index
     double refMed = 1.33;
     //double refPart = 1.45; //(1.3, 0.008); // relative refractive index
     //double refRel = 1.08;//refPart/refMed;
-    complex<double> refRel = complex<double>(1.05,0.006);
+
+    // Refractive Index  -  Hard-coded
+    // double nRe = 1.05;
+    // double nIm = 0.006;
+
+    // Refractive Index  - User Defined
+
+    double nRe; double nIm; // real and imaginary particle refractive index
+    cout<<"Input Real Refractive Index"<<endl;
+    cin>>nRe; // real refractive index
+    cout<<"Input Imaginary Refractive Index"<<endl;
+    cin>>nIm; // imaginary refractive index
+
+    complex<double> refRel = complex<double>(nRe,nIm); // refRel stores the refractive index as a complex double
 
     // Wavelength
     double lambda = 0.532; // lidar wavelength in a vaccuum (um)
@@ -87,8 +119,7 @@ int main (){
     int degreei; // index for scattering angle theta
 
     for (int i=0; i<nangTot; i++){
-        angles[i] = (double)i*dang;
-        //cout << angles[i] << endl;
+        angles[i] = (double)i*dang; // create an array of angles for mie calculations
     }
 
     // Particle Size Distribution Parameters
@@ -100,11 +131,9 @@ int main (){
     double fac = pow((Dmax/Dmin),(1.0/(diamBin-1.0))); // exponential factor necessary for defining logarithmically spaced diameter bins
 
     // Initialize Particle Size Arrays
-    double D[diamBin]; double Dm[diamBin]; //particle diameters in um and m
-    double radius[diamBin]; double sizeParam[diamBin];
-    double diffNumDistribution[diamBin];
-
-    // Set PSD array values/Users/Brian/Documents/C++/LidarMCplusplus/LidarMC++.cpp
+    double radius[diamBin]; double D[diamBin]; double Dm[diamBin]; // initialize particle diameters in um and m
+    double sizeParam[diamBin]; // initialie mie size parameter
+    double diffNumDistribution[diamBin]; //initialize array containing a differential number distribution of particles diameters
 
     // Diameter Array
     for (int i=0; i<diamBin; i++){ // generate an array of particle diameters
@@ -165,8 +194,7 @@ int main (){
         diffNumDistribution[i] = k*pow((D[i]/D[0]),(-1*jungeSlope)); // # of particles m^-3 um^-1
     }
 
-//    for (int i = 0; i<diamBin; i++){
-//    }
+
 /////////////////// Bulk Mie Calculations /////////////////////
     // Mie Calculations for Each Size Parameter in the distribution
     //j+1 is used to convert from fortran indexing to c++indexing
@@ -179,9 +207,9 @@ int main (){
         s33[j][i] = real(S1[j+1]*conj(S2[j+1]));
         s34[j][i] = imag(S2[j+1]*conj(S1[j+1]));
       }
-      Qb[i]=Qscat_p[0];
-      Qa[i]=Qabs_p[0];
-      Qc[i]=Qext_p[0];
+      Qb[i]=Qscat_p[0]; // scattering efficiency
+      Qa[i]=Qabs_p[0]; // absorption efficiency
+      Qc[i]=Qext_p[0]; // extinction efficiency
       Qba[i]=Qback_p[0];
     }
 
@@ -229,30 +257,41 @@ int main (){
       cInt[i] = Qc[i] * pi/4 *(D[i]*1E-6)*(D[i]*1E-6) * diffNumDistribution[i];
     }
     for (int i = 0; i<diamBin; i++){
-      Dm[i] = D[i] * 1E-6;
+      Dm[i] = D[i] * 1E-6; // diameter converted to meters
     }
 
-    b = trapz(Dm,bInt,diamBin);
-    a = trapz(Dm,aInt,diamBin);
-    c = trapz(Dm,cInt,diamBin);
-    omega = b/c;
-
+    // IOPs - calculated from Mie Theory
+    a = trapz(Dm,aInt,diamBin); // absorption coefficient(m^-1)
+    b = trapz(Dm,bInt,diamBin); // scattering coefficient (m^-1)
+    //c = trapz(Dm,cInt,diamBin); // beam attenuation coefficient (m^-1)
+    c = a+b;
+    omega = b/c; // single scattering albedo
 
     vector<double> compFunctionVec (compFunctionC, compFunctionC+sizeof(compFunctionC) / sizeof(compFunctionC[0]));
-    //vector<double> s11barVec (s11bar, s11bar+sizeof(s11bar) / sizeof(s11bar[0]));
-    //vector<double> s12barVec (s12bar, s12bar+sizeof(s12bar) / sizeof(s12bar[0]));
+    vector<double> s11barVec (s11bar, s11bar+sizeof(s11bar) / sizeof(s11bar[0]));
+    vector<double> s12barVec (s12bar, s12bar+sizeof(s12bar) / sizeof(s12bar[0]));
+    vector<double> s33barVec (s33bar, s33bar+sizeof(s33bar) / sizeof(s33bar[0]));
+    vector<double> s34barVec (s34bar, s34bar+sizeof(s34bar) / sizeof(s34bar[0]));
 
     vector<double> anglesVec (angles, angles+sizeof(angles) / sizeof(angles[0]));
 
+
     tk::spline splComp; //define the spline for the comparison function
-    //tk::spline splS11;
-    //k::spline splS12;
+    splComp.set_points(compFunctionVec, anglesVec); // input probability output angle
 
-    splComp.set_points(compFunctionVec, anglesVec);
-    //splS11.set_points(s11barVec, anglesVec);
-    //splS12.set_points(s12barVec, anglesVec);
+    tk::spline splS11;
+    splS11.set_points(anglesVec, s11barVec); // input:angle output:S11
 
-    //cout<<splComp(.99999999)<< endl;
+    tk::spline splS12;
+    splS12.set_points(anglesVec, s12barVec); // input:angle output:S12
+
+    tk::spline splS33;
+    splS33.set_points(anglesVec, s12barVec); // input:angle output:S12
+
+    tk::spline splS34;
+    splS34.set_points(anglesVec, s12barVec); // input:angle output:S12
+
+
     // Photon Tracking and Position Variables //
     double xT; double yT; // variable used to describe the x and y location where a photon intersects the detector plane
     double hitRad; // radial distance away from detector center that photon crosses detector plane
@@ -262,13 +301,14 @@ int main (){
     double gamma; // rotation angle back into photon frame of reference
     double detectAngle; // rotation angle back into the detector reference frame
 
-    // Polarization
+    // Polarization //
     arma::mat stokes; arma::mat mueller;
     arma::mat stokesDetect; arma::mat rotationDetector; //stokes vector of detected photon & rotation matrix to translate to detector reference frame
 
 
-    // Signal Variables
+    // Signal Variables //
     double dBin; // a varible describing the width of each signal bin
+    int nBin; // number of bins in signal output
     double max; // maximum distance traveled by a photon
     double bd; // temporary variable use to hold the value of distance while binning the signal
     double coPol; // temporary variable used to hold the co-polarized value
@@ -279,8 +319,8 @@ int main (){
     vector<double> signalCOweight; // distance associated with each signal bin
     vector<double> signalCROSSweight; // distance associated with each signal bin
     vector<double> scatHist; // a variable used to hold the number of scattering events of each photon
-    vector<double> angleDet;
-    vector<double> binEdges;
+    vector<double> angleDet; // angle of incidence on the detector
+    vector<double> binEdges; // edges of signal bins
 
     double I; double Irand;
 
@@ -307,22 +347,6 @@ int main (){
         if (i == 100000){
             cout << i << endl;
         }
-        if (i == 300000){
-            cout << i << endl;
-        }
-        if (i == 500000){
-            cout << i << endl;
-        }
-        if (i == 700000){
-            cout << i << endl;
-        }
-
-//        if (i == 1000000){
-//            cout << i << endl;
-//        }
-//        if (i == 5000000){
-//            cout << i << endl;
-//        }
 
         // Photon Position and Direction Initialization
         double x1 = 0.0; double y1 = 0.0; double z1 = 0.0; // initialize photon position 1
@@ -335,15 +359,16 @@ int main (){
         // Photon Status variable
         int status = 1; // status variable 1 = alive 0 = DEAD
         double rTotal = 0; // total pathlength variable
-        double nScat = 0; // number of scattering events so far
+        int nScat = 0; // number of scattering events so far
         double weight = 1; // weight of a photon
-        double threshold = 0.01; // 1/10 photons will survive the roulette sequence
+        double threshold = 0.01; // photon weight threshold to enter roulette
+        double rouletteWeight = 0.1; // fraction of photons surviving roulette
 
         // Polarization
-        stokes << 1 << arma::endr     // initialize vertically polarized photon
-               << -1 << arma::endr
-               << 0 << arma::endr
-               << 0 << arma::endr;
+        stokes <<  1  << arma::endr     // initialize vertically polarized photon
+               << -1  << arma::endr
+               <<  0  << arma::endr
+               <<  0  << arma::endr;
 
         while (status == 1) {   // while the photon is still alive.....
 
@@ -352,6 +377,7 @@ int main (){
             x2 = x1 + mux1 * r; // update the photon's new x position
             y2 = y1 + muy1 * r; // update the photon's new y position
             z2 = z1 + muz1 * r; // update the photon's new z position
+
             // Update Pathlength Storage Variable
             rTotal = rTotal + r;
 
@@ -376,10 +402,11 @@ int main (){
                         rTotal = rTotal - (r-(fd *r )); // calculate the distance;
                         distance.push_back(rTotal/2); // append the total distance travelled by the photon to the distance vector
 
-                        // Create unpolarized signal
+                        // Create unpolarized signal //
                         signalWeight.push_back(weight); // append photon weight (omega^n) to signal weight vector
 
-                        // Create polarized signal
+                        // Create polarized signal //
+
                         // rotate into the detector reference frame
                         detectAngle = atan2(mux1,muy1);
                         rotationDetector  << 1 << 0 << 0 << 0 << arma::endr
@@ -389,6 +416,8 @@ int main (){
 
                         stokesDetect = rotationDetector * stokes; // rotate stokes vector into the referecne frame of detector
 
+                        // partition signalinto co- and cross- polarized using linear polarization matrices
+                        // ***Warning*** currently does not account for circularly polarized light.
                         coPol = (0.5 * stokesDetect[0] - 0.5 * stokesDetect[1]) * weight;
                         crossPol = (0.5 * stokesDetect[0] + 0.5 * stokesDetect[1]) * weight;
 
@@ -404,30 +433,33 @@ int main (){
                 }
             }
                 else{
+
+                  // Rejection Method - Jallion et al 2011
                     do{
-                        theta = splComp((double) rand() / (RAND_MAX));
-                        phi = ((double) rand() / (RAND_MAX))*2.0*pi;
-                        degreei = floor(theta*nangTot/pi);
-                        I = s11bar[degreei]+s12bar[degreei]*(stokes[1]*cos(2*phi)+stokes[2]*sin(2*phi))/stokes[0];
-                        Irand = ((double) rand() / (RAND_MAX)) * s11bar[degreei]+abs(s12bar[degreei]);
-                    }while(Irand>=I);
+                        theta = splComp((double) rand() / (RAND_MAX)); //select a random polar scatering angle based off of the comparison function
+                        phi = ((double) rand() / (RAND_MAX))*2.0*pi; //select a random azimuthal scattering randomly distributed from 0-2pi
+                        I = splS11(theta)+splS12(theta)*(stokes[1]*cos(2*phi)+stokes[2]*sin(2*phi))/stokes[0]; //calculate phase function using theta and phi
+                        Irand = ((double) rand() / (RAND_MAX)) * splS11(theta)+abs(splS12(theta)); //rendomly draw from the comparison function
+                    }while(Irand>=I); //if random draw from comparison function is >= phase function, do it again
 
                     mux2 = updateDirCosX(theta, phi, mux1, muy1, muz1); // update the photon X direction cosine
                     muy2 = updateDirCosY(theta, phi, mux1, muy1, muz1); // update the photon Y direction cosine
                     muz2 = updateDirCosZ(theta, phi, mux1, muy1, muz1); // update the photon Z direction cosine
 
-                    // Update Polarization Variables
-                    gamma = gammaCalc(muz1, muz2, theta, phi); // update reference frame rotation angle
+                    // Update Polarization Variables //
 
-                    mueller << s11bar[degreei] << s12bar[degreei] << 0 << 0 << arma::endr
-                            << s12bar[degreei] << s11bar[degreei] << 0 << 0 << arma::endr
-                            << 0 << 0 << s33bar[degreei] << s34bar[degreei] << arma::endr
-                            << 0 << 0 <<-1*s34bar[degreei]<< s33bar[degreei] << arma::endr;
+                    // update reference frame rotation angle
+                    gamma = gammaCalc(muz1, muz2, theta, phi);
 
+                    // update mueller matrix
+                    mueller << splS11(theta) << splS12(theta) << 0 << 0 << arma::endr
+                            << splS12(theta) << splS11(theta) << 0 << 0 << arma::endr
+                            << 0 << 0 << splS33(theta) << splS34(theta) << arma::endr
+                            << 0 << 0 <<-1*splS34(theta)<< splS33(theta) << arma::endr;
+                    // Update Stokes vector
                     stokes = updateStokes(stokes, mueller, phi, gamma);
 
                     // reset position variables
-                    // cout << x1 << "," << y1 << "," << z1 <<endl;
                     x1 = x2;
                     y1 = y2;
                     z1 = z2;
@@ -436,17 +468,14 @@ int main (){
                     muy1 = muy2;
                     muz1 = muz2;
 
-                    //cout << mux1*mux1 + muy1*muy1 + muz1*muz1 << endl;
-
                     // Update Photon Weight
-                    nScat = nScat+1; // update the number of scattering events
-                    weight = weight * omega; // update weight variable
+                    nScat += 1; // update the number of scattering events
+                    weight *= omega; // update weight variable
 
                      //Photon Termination Roulette - allows for conservation of energy with unbiased photon termination //
-
                      if (weight < threshold){ // unbiased roulette termination
-                         if (rand() < 0.1){
-                           weight = weight / 0.1;
+                         if (rand() < rouletteWeight){ // if random # is less than threshold, survives roulette
+                           weight /= rouletteWeight; //
                          }
                           else {
                              status = 0;
@@ -460,7 +489,8 @@ int main (){
 
     dBin = 0.25; //bin widths (m)
     max = *max_element(distance.begin(), distance.end()); //find the maximum value in the distance vector
-    for (int i=0; i<ceil(max/dBin); i++){
+    nBin = ceil(max/dBin); //number of bins to store signal in
+    for (int i=0; i<nBin; i++){
         binEdges.push_back(i*dBin+dBin); //create a variable containing the upper bin edge of each distance bin
     }
 
@@ -475,96 +505,98 @@ int main (){
         signalCROSS.at(int(bd/dBin)-1) = signalCROSS[(int(bd/dBin)-1)] + signalCROSSweight[i]; //...add the value of the photon weight to the signal variable at the correct index for its distance bin
     }
 
-    ofstream myfile;
+    ofstream signalCSV;
     // Write File Header
-    myfile.open ("signal.csv");
-    myfile << "LidarMCplusplus.cpp output file:\n";
-    myfile << "Radius(m),";
-    myfile << detectorRad;
-    myfile << "\n";
-    myfile << "FOV(rad),";
-    myfile << FOV;
-    myfile << "\n";
-    myfile << "a(m^-1),";
-    myfile << a;
-    myfile << "\n";
-    myfile << "b(m^-1),";
-    myfile << b;
-    myfile << "\n";
-    myfile << "c(m^-1),";
-    myfile << c;
-    myfile << "\n";
-    myfile << "Junge,";
-    myfile << jungeSlope;
-    myfile << "\n";
-    myfile << "bulk ref index,";
-    myfile << refRel;
-    myfile << "\n";
-    myfile << "#photons,";
-    myfile << nPhotons;
-    myfile << "\n";
-    myfile << "distance,signal,co,cross\n";
+    signalCSV.open (signalFile+fileID+".csv");
+    signalCSV << "LidarMCplusplus.cpp output file:\n";
+    signalCSV << "Radius(m),";
+    signalCSV << detectorRad;
+    signalCSV << "\n";
+    signalCSV << "FOV(rad),";
+    signalCSV << FOV;
+    signalCSV << "\n";
+    signalCSV << "a(m^-1),";
+    signalCSV << a;
+    signalCSV << "\n";
+    signalCSV << "b(m^-1),";
+    signalCSV << b;
+    signalCSV << "\n";
+    signalCSV << "c(m^-1),";
+    signalCSV << c;
+    signalCSV << "\n";
+    signalCSV << "Junge,";
+    signalCSV << jungeSlope;
+    signalCSV << "\n";
+    signalCSV << "bulk ref index,";
+    signalCSV << refRel;
+    signalCSV << "\n";
+    signalCSV << "#photons,";
+    signalCSV << nPhotons;
+    signalCSV << "\n";
+    signalCSV << "distance,signal,co,cross\n";
     // Write Signal
     for (int j=0; j<(signal.size()); j++){
-        myfile << binEdges[j];
-        myfile << ",";
-        myfile << signal[j];
-        myfile << ",";
-        myfile << signalCO[j];
-        myfile << ",";
-        myfile << signalCROSS[j];
-        myfile << "\n";
+        signalCSV << binEdges[j];
+        signalCSV << ",";
+        signalCSV << signal[j];
+        signalCSV << ",";
+        signalCSV << signalCO[j];
+        signalCSV << ",";
+        signalCSV << signalCROSS[j];
+        signalCSV << "\n";
 
     }
+    signalCSV.close();
 
-    myfile.close();
 
-    ofstream signalfile;
+
+
+    ofstream photonCSV;
     // Write File Header
-    signalfile.open ("photon.csv");
-    signalfile << "LidarMCplusplus.cpp output file:\n";
-    signalfile << "Radius(m),";
-    signalfile << detectorRad;
-    signalfile << "\n";
-    signalfile << "FOV(rad),";
-    signalfile << FOV;
-    signalfile << "\n";
-    signalfile << "a(m^-1),";
-    signalfile << a;
-    signalfile << "\n";
-    signalfile << "b(m^-1),";
-    signalfile << b;
-    signalfile << "\n";
-    signalfile << "c(m^-1),";
-    signalfile << c;
-    signalfile << "\n";
-    signalfile << "Junge,";
-    signalfile << jungeSlope;
-    signalfile << "\n";
-    signalfile << "bulk ref index,";
-    signalfile << refRel;
-    signalfile << "\n";
-    signalfile << "#photons,";
-    signalfile << nPhotons;
-    signalfile << "\n";
-    signalfile << "distance,signal,co,cross,nScat,angleDet\n";
+    photonCSV.open (photonFile+fileID+".csv");
+    photonCSV << "LidarMCplusplus.cpp output file:\n";
+    photonCSV << "Radius(m),";
+    photonCSV << detectorRad;
+    photonCSV << "\n";
+    photonCSV << "FOV(rad),";
+    photonCSV << FOV;
+    photonCSV << "\n";
+    photonCSV << "a(m^-1),";
+    photonCSV << a;
+    photonCSV << "\n";
+    photonCSV << "b(m^-1),";
+    photonCSV << b;
+    photonCSV << "\n";
+    photonCSV << "c(m^-1),";
+    photonCSV << c;
+    photonCSV << "\n";
+    photonCSV << "Junge,";
+    photonCSV << jungeSlope;
+    photonCSV << "\n";
+    photonCSV << "bulk ref index,";
+    photonCSV << refRel;
+    photonCSV << "\n";
+    photonCSV << "#photons,";
+    photonCSV << nPhotons;
+    photonCSV << "\n";
+    photonCSV << "distance,signal,co,cross,nScat,angleDet\n";
     // Write Signal
     for (int j=0; j<(distance.size()); j++){
-        signalfile << distance[j];
-        signalfile << ",";
-        signalfile << signalWeight[j];
-        signalfile << ",";
-        signalfile << signalCOweight[j];
-        signalfile << ",";
-        signalfile << signalCROSSweight[j];
-        signalfile << ",";
-        signalfile << scatHist[j];
-        signalfile << ",";
-        signalfile << angleDet[j];
-        signalfile << "\n";
+        photonCSV << distance[j];
+        photonCSV << ",";
+        photonCSV << signalWeight[j];
+        photonCSV << ",";
+        photonCSV << signalCOweight[j];
+        photonCSV << ",";
+        photonCSV << signalCROSSweight[j];
+        photonCSV << ",";
+        photonCSV << scatHist[j];
+        photonCSV << ",";
+        photonCSV << angleDet[j];
+        photonCSV << "\n";
 
     }
-    signalfile.close();
+    photonCSV.close();
 
 
     auto end = chrono::system_clock::now();     // End Time
@@ -594,7 +626,7 @@ double deg2Rad(double xdeg) {
 // Update X Direction Cosine
 double updateDirCosX(double theta, double phi, double mux, double muy, double muz) {
   double muxPrime;
-    if (abs(muz) > 0.99){
+    if (abs(muz) > 0.999){
       muxPrime = sin(theta) * cos(phi);
     }
         else{
@@ -606,7 +638,7 @@ double updateDirCosX(double theta, double phi, double mux, double muy, double mu
 // Update Y Direction Cosine
 double updateDirCosY(double theta, double phi, double mux, double muy, double muz) {
   double muyPrime;
-    if (abs(muz) > 0.99){
+    if (abs(muz) > 0.999){
       muyPrime = sin(theta) * sin(phi);
     }
         else{
@@ -618,7 +650,7 @@ double updateDirCosY(double theta, double phi, double mux, double muy, double mu
 // Update Z Direction Cosine
 double updateDirCosZ(double theta, double phi, double mux, double muy, double muz) {
   double muzPrime;
-    if (abs(muz) > 0.99){
+    if (abs(muz) > 0.999){
       muzPrime = cos(theta) * muz/abs(muz);
     }
         else{
@@ -669,7 +701,6 @@ double intersectionPointX(double x1, double y1, double z1, double x2, double y2,
     //Function Body
     t = -1 * z1 / (z2-z1);
     xi = x1 + t*(x2-x1);
-
     return xi;
 }
 
