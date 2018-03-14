@@ -89,12 +89,14 @@ int main (){
 
     // Refractive Index
     double refMed = 1.33;
+    //double refPart = 1.45; //(1.3, 0.008); // relative refractive index
+    //double refRel = 1.08;//refPart/refMed;
 
-    // Refractive Index  -  Hard-coded //
+    // Refractive Index  -  Hard-coded
     // double nRe = 1.05;
     // double nIm = 0.006;
 
-    // Refractive Index  - User Defined //
+    // Refractive Index  - User Defined
 
     double nRe; double nIm; // real and imaginary particle refractive index
     cout<<"Input Real Refractive Index"<<endl;
@@ -107,7 +109,7 @@ int main (){
     // Wavelength
     double lambda = 0.532; // lidar wavelength in a vaccuum (um)
     double lambdaMed = lambda/refMed; // Lidar Wavelength in Medium (um)
-    double kMed = 2*pi/lambdaMed; // Lidar wavenumber in Medium;
+    double kMed = 2*pi/lambdaMed*1e-6; // Lidar wavenumber in Medium; convert lambda to (m)
 
     // Angles
     const int nang = 500; // number of angles between 0-90
@@ -120,7 +122,7 @@ int main (){
         angles[i] = (double)i*dang; // create an array of angles for mie calculations
     }
 
-    // Particle Size Distribution Parameters //
+    // Particle Size Distribution Parameters
 
     // Set PSD parameters
     double Dmin = 0.1; // minimum particle diameter (um);
@@ -141,24 +143,24 @@ int main (){
     for (int i=0; i<diamBin; i++){ // generate an array of particle diameters
       radius[i]=D[i]/2; // define the diameter bins
     }
-    // Size Parameter Array //
+    // Size Parameter Array
     for (int i=0; i<diamBin; i++){ // generate an array of size parameters
       sizeParam[i] = 2*pi*radius[i]*refMed / lambda; // mie theory size parameter
     }
 
-    // Define Mie Output Variables and Pointers //
+    // Define Mie Output Variables and Pointers
     double Qscat; double Qext; double Qabs; double Qback;  // Mie scattering efficiencies
     double* Qscat_p = &Qscat; double* Qext_p = &Qext; double* Qabs_p = &Qabs; double* Qback_p = &Qback; // pointers to Mie Scattering efficiencies
     double Qb[diamBin]; double Qc[diamBin]; double Qa[diamBin]; double Qba[diamBin];
     complex<double> S1[2*nang]; complex<double> S2[2*nang];
     complex<double>* S1_p = S1; complex<double>* S2_p = S2;
 
-    // IOP Stuff //
+    //IOP Stufffff
     double aInt[diamBin];
     double bInt[diamBin];
     double cInt[diamBin];
 
-    // Mueller Matrix elements //
+    // Mueller Matrix elements
     double s11[nangTot][diamBin];
     double s12[nangTot][diamBin];
     double s33[nangTot][diamBin];
@@ -194,7 +196,6 @@ int main (){
 
 
 /////////////////// Bulk Mie Calculations /////////////////////
-
     // Mie Calculations for Each Size Parameter in the distribution
     //j+1 is used to convert from fortran indexing to c++indexing
     for (int i = 0; i<diamBin; i++){
@@ -229,6 +230,7 @@ int main (){
         integrandArray33[j] = integrandS33[i][j];
         integrandArray34[j] = integrandS34[i][j];
       }
+    // If you integrate over diameter, S11 = VSF
     s11bar[i] = (1.0/(kMed*kMed)) * trapz(sizeParam,integrandArray11,diamBin);
     s12bar[i] = (1.0/(kMed*kMed)) * trapz(sizeParam,integrandArray12,diamBin);
     s33bar[i] = (1.0/(kMed*kMed)) * trapz(sizeParam,integrandArray33,diamBin);
@@ -236,7 +238,7 @@ int main (){
     compFunction[i] = (s11bar[i] + abs(s12bar[i])) * sin(angles[i]);
     }
 
-// Rejection Method From Jallion and Saint-James 2003
+    // Rejection Method From Jallion and Saint-James 2003
     compFunctionI = trapz(angles,compFunction,nangTot); // find integral of compFunction
 
     compFunctionC[0] = 0.0; //initialize first element of cumulative comp function
@@ -258,12 +260,6 @@ int main (){
     for (int i = 0; i<diamBin; i++){
       Dm[i] = D[i] * 1E-6; // diameter converted to meters
     }
-
-    // IOPs - calculated from Mie Theory
-    // b = trapz(Dm,bInt,diamBin); // scattering coefficient (m^-1)
-    // a = trapz(Dm,aInt,diamBin); // absorption coefficient(m^-1)
-    // c = trapz(Dm,cInt,diamBin); // beam attenuation coefficient (m^-1)
-    // omega = b/c; // single scatterin albedo
 
     // // IOPs - User Input
     // cout<<"a=";

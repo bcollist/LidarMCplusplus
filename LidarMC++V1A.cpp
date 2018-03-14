@@ -109,10 +109,10 @@ int main (){
     // Wavelength
     double lambda = 0.532; // lidar wavelength in a vaccuum (um)
     double lambdaMed = lambda/refMed; // Lidar Wavelength in Medium (um)
-    double kMed = 2*pi/lambdaMed; // Lidar wavenumber in Medium;
+    double kMed = 2*pi/lambdaMed*1e-6; // Lidar wavenumber in Medium; convert lambda to (m)
 
     // Angles
-    const int nang = 500; // number of angles between 0-90
+    const int nang = 455; // number of angles between 0-90
     const int nangTot = (2*nang-1);
     double dang = pi/2/(nang-1);
     double angles[nangTot];
@@ -230,10 +230,13 @@ int main (){
         integrandArray33[j] = integrandS33[i][j];
         integrandArray34[j] = integrandS34[i][j];
       }
+    // If you integrate over particle diameter, you get the VSF
+    // or you can integrate over the size parameters
     s11bar[i] = (1.0/(kMed*kMed)) * trapz(sizeParam,integrandArray11,diamBin);
     s12bar[i] = (1.0/(kMed*kMed)) * trapz(sizeParam,integrandArray12,diamBin);
     s33bar[i] = (1.0/(kMed*kMed)) * trapz(sizeParam,integrandArray33,diamBin);
     s34bar[i] = (1.0/(kMed*kMed)) * trapz(sizeParam,integrandArray34,diamBin);
+    // add the elements of the mueller matrix of seawater here
     compFunction[i] = (s11bar[i] + abs(s12bar[i])) * sin(angles[i]);
     }
 

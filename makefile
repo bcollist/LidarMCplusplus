@@ -1,27 +1,22 @@
-# Define output .exe file
-LINK_TARGET = mc.exe
-
-# Object Files
-OBJS = \
-	LidarMC++V1.o
-
 # Compiler
-CCX=clang
+CC=g++-7
 
-# Any compiler flags optimization etc.
-CFLAG = -O2
+# Any compiler flags
+CFLAG = -std=c++11 -O2
 
-INCLUDE = $ARMADILLO_ROOT/include
-LINKER = $ARMADILLO_ROOT/LIB -larmadillo
+# Build Target Executable
+TARGET = LidarMC++V1A
+
+# LINKER
+LINKER = -larmadillo
+
+
+#INCLUDE = $ARMADILLO_ROOT/include
+#LINKER = $ARMADILLO_ROOT/LIB -larmadillo
 
 
 # top-level rule, to compile everything.
-all: $(PROG)
+all: $(TARGET)
 
-PROG: LidarMC++V1.o
-	clang -o PROG LidarMC++V1.o
-
-LidarMC++V1.o: LidarMC++V1.cpp
-	clang -c LidarMC++V1.cpp
-
-	clean rm LidarMC++V1.o PROG
+$(TARGET): $(TARGET).cpp
+	$(CC) $(CFLAG) $(LINKER) -o $(TARGET) $(TARGET).cpp
