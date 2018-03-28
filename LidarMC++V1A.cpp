@@ -250,7 +250,7 @@ int main (){
     }
 
     for (int i = 1; i<nangTot; i++){ // normalize the cumulative comp function to the integral
-        compFunctionC[i] = compFunctionC[i]/compFunctionI;
+      compFunctionC[i] = compFunctionC[i]/compFunctionI;
     }
 
     // Calculate IOPs
@@ -332,7 +332,7 @@ int main (){
     //nPhotons = 10000 // number of photons to trace
     //Photons = 100000 // number of photons to trace
     //nPhotons = 1000000 // number of photons to trace
-    int nPhotons = 100000000; // number of photons to trace
+    int nPhotons = 1000000; // number of photons to trace
 
     // Predefined Working Variables
 //    mt19937::result_type seed = chrono::high_resolution_clock::now().time_since_epoch().count(); // seed the random number generator
@@ -343,13 +343,18 @@ int main (){
     // Main Code
     for (int i = 0; i < nPhotons; ++i){      // loop through each individual photon
 
-        if (i==10){
-            cout << i << endl;
-        }
-
-        if (i == 100000){
-            cout << i << endl;
-        }
+        // if (i==10){
+        //     cout << i << endl;
+        // }
+        // if (i==100){
+        //     cout << i << endl;
+        // }
+        // if (i==10000){
+        //     cout << i << endl;
+        // }
+        // if (i == 100000){
+        //     cout << i << endl;
+        // }
 
         // Photon Position and Direction Initialization
         double x1 = 0.0; double y1 = 0.0; double z1 = 0.0; // initialize photon position 1
@@ -374,6 +379,13 @@ int main (){
                <<  0  << arma::endr;
 
         while (status == 1) {   // while the photon is still alive.....
+          // cout << mux1;
+          // cout << ',';
+          // cout << muy1;
+          // cout << ',';
+          // cout << muz1 << endl;
+
+
 
             // Move Photon
             r = -1 * log(((double) rand() / (RAND_MAX)))/c; // generate a random propegation distance
@@ -731,13 +743,13 @@ arma::mat updateStokes(arma::mat stokes, arma::mat mueller, double phi, double g
 
     //Function Body
     rotationIn  << 1 << 0 << 0 << 0 << arma::endr // Rotates the photon counterclockwise (if photon is coming at you) by angle phi into the scattering plane
-                << 0 << (cos(-2*phi)) << (sin(-2*phi)) << 0 << arma::endr
-                << 0 << (-sin(-2*phi)) << (cos(-2*phi)) << 0 << arma::endr
+                << 0 << (cos(2*phi)) << (sin(2*phi)) << 0 << arma::endr
+                << 0 << (-sin(2*phi)) << (cos(2*phi)) << 0 << arma::endr
                 << 0 << 0 << 0 << 1 << arma::endr;
 
     rotationOut  << 1 << 0 << 0 << 0 << arma::endr // Rotates the photon counterclockwise (if photon is coming at you) by angle gamma into the new scattering plane
-                 << 0 << (cos(-2*gamma)) << (sin(-2*gamma)) << 0 << arma::endr
-                 << 0 << (-sin(-2*gamma)) << (cos(-2*gamma)) << 0 << arma::endr
+                 << 0 << (cos(2*gamma)) << (sin(2*gamma)) << 0 << arma::endr
+                 << 0 << (-sin(2*gamma)) << (cos(2*gamma)) << 0 << arma::endr
                  << 0 << 0 << 0 << 1 << arma::endr;
 
     stokesPrime = rotationOut * mueller * rotationIn * stokes;

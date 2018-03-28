@@ -652,14 +652,14 @@ arma::mat updateStokes(arma::mat stokes, arma::mat mueller, double phi, double g
     arma::mat rotationIn; arma::mat rotationOut; arma::mat stokesPrime;
 
     //Function Body
-    rotationIn  << 1 << 0 << 0 << 0 << arma::endr // Rotates the photon counterclockwise (if photon is coming at you) by angle phi into the scattering plane
-                << 0 << (cos(-2*phi)) << (sin(-2*phi)) << 0 << arma::endr
-                << 0 << (-sin(-2*phi)) << (cos(-2*phi)) << 0 << arma::endr
+    rotationIn  << 1 << 0 << 0 << 0 << arma::endr // Rotates the photon clockwise (if photon is coming at you) by angle phi into the scattering plane
+                << 0 << (cos(2*phi)) << (sin(2*phi)) << 0 << arma::endr
+                << 0 << (-sin(2*phi)) << (cos(2*phi)) << 0 << arma::endr
                 << 0 << 0 << 0 << 1 << arma::endr;
 
-    rotationOut  << 1 << 0 << 0 << 0 << arma::endr // Rotates the photon counterclockwise (if photon is coming at you) by angle gamma into the new scattering plane
-                 << 0 << (cos(-2*gamma)) << (sin(-2*gamma)) << 0 << arma::endr
-                 << 0 << (-sin(-2*gamma)) << (cos(-2*gamma)) << 0 << arma::endr
+    rotationOut  << 1 << 0 << 0 << 0 << arma::endr // Rotates the photon clockwise (if photon is coming at you) by angle gamma into the new scattering plane
+                 << 0 << (cos(2*gamma)) << (sin(2*gamma)) << 0 << arma::endr
+                 << 0 << (-sin(2*gamma)) << (cos(2*gamma)) << 0 << arma::endr
                  << 0 << 0 << 0 << 1 << arma::endr;
 
     stokesPrime = rotationOut * mueller * rotationIn * stokes;

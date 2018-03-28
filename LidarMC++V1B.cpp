@@ -74,7 +74,7 @@ int main (){
 
 
     // detector position
-    double xd = 0.0; double yd = 0; double zd = 0; // position of the detector in (m)
+    double xd = 0.0; double yd = 0.0; double zd = 0.0; // position of the detector in (m)
     double fd; // variable used in detector photon geometry colculations
     double anglei; // angle of intersection between photon and detector plane
 
@@ -734,13 +734,13 @@ arma::mat updateStokes(arma::mat stokes, arma::mat mueller, double phi, double g
 
     //Function Body
     rotationIn  << 1 << 0 << 0 << 0 << arma::endr // Rotates the photon counterclockwise (if photon is coming at you) by angle phi into the scattering plane
-                << 0 << (cos(-2*phi)) << (sin(-2*phi)) << 0 << arma::endr
-                << 0 << (-sin(-2*phi)) << (cos(-2*phi)) << 0 << arma::endr
+                << 0 << (cos(2*phi)) << (sin(2*phi)) << 0 << arma::endr
+                << 0 << (-sin(2*phi)) << (cos(2*phi)) << 0 << arma::endr
                 << 0 << 0 << 0 << 1 << arma::endr;
 
     rotationOut  << 1 << 0 << 0 << 0 << arma::endr // Rotates the photon counterclockwise (if photon is coming at you) by angle gamma into the new scattering plane
-                 << 0 << (cos(-2*gamma)) << (sin(-2*gamma)) << 0 << arma::endr
-                 << 0 << (-sin(-2*gamma)) << (cos(-2*gamma)) << 0 << arma::endr
+                 << 0 << (cos(2*gamma)) << (sin(2*gamma)) << 0 << arma::endr
+                 << 0 << (-sin(2*gamma)) << (cos(2*gamma)) << 0 << arma::endr
                  << 0 << 0 << 0 << 1 << arma::endr;
 
     stokesPrime = rotationOut * mueller * rotationIn * stokes;
