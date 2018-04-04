@@ -1,16 +1,16 @@
-#include <cstdlib>
-#include <cstdio>
-#include <cmath>
-#include <ctime>
-#include <iostream>
-#include <fstream>
-#include <random>
-#include <chrono>
-#include <vector>
-#include <armadillo>
+#include <cstdlib> // contains the standard c++ libraries
+#include <cmath> // contains the c++ math libraries
+#include <iostream> // contains input/output functions (ie. cout <<)
+#include <fstream> // contains function that allow file manipulation
+#include <random> // contains random number generation functions
+#include <chrono> // contains functions that deal with time
+#include <vector> // contains vector notations
+#include <armadillo> // Armadillo linear algebra
+#include <complex> // allows for complex number notation
+#include <string> // string stuff
 #include "spline.hpp" // https://github.com/ttk592/spline/
-#include <complex>
-#include <string>
+#include "erfinv.hpp" // https://gist.github.com/lakshayg/d80172fe5ae3c5d2c2aedb53c250320e
+
 
 using namespace std;
 
@@ -40,27 +40,31 @@ double gammaCalc(double muz1, double muz2, double theta, double phi); // calcula
 
 // Mie Calculations
 int bhmie(double x, complex<double> refrel, int nang, double* Qscat_p, double* Qext_p, double* Qabs_p, double* Qback_p, complex<double>* S1_p, complex<double>* S2_p); // mie calculations
-
 double trapz(double x[], double y[], int size); // trapezoidal integration function
 
 // main function
 int main (){
+
     cout << "start" << endl;
     auto start=chrono::system_clock::now(); // start a timer
-    //////////////////////////// define constants //////////////////////////////////
 
-    // Input FIle Parameters
+    /////////////////////////////////////
+    ///// Input FIle Parameters/////////
+    ///////////////////////////////////
+
     string fileID;
     string photonFile("photon"); // first part of photon tracing filename
     string signalFile("signal"); // first part of signal trcking filename
 
     cout<<"Input File Identifier"<<endl;
     cin>>fileID;
-    ////// Define Lidar Parameters//////
 
-    // Detector Size and FOV //
-    double detectorRad = 1.5E-1; // number of photons to trace
-    //double scatLimit = 4; // number of scattering events to trace
+    /////////////////////////////////////
+    ////// Define Lidar Parameters//////
+    ///////////////////////////////////
+
+    // Detector Parameters //
+    double detectorRad = 1.5E-1; // detector radius
 
     // Predefined FOV
     //double FOV = deg2Rad(10); // half-angle FOV; enter in degrees -> converts to rad
@@ -71,12 +75,19 @@ int main (){
     cin>>FOV;
     FOV=deg2Rad(FOV);
 
-
-
-    // detector position
-    double xd = 0.0; double yd = 0; double zd = 0; // position of the detector in (m)
+    double xd = 0.0; double yd = 0.0; double zd = 0.0; // position of the detector in (m)
     double fd; // variable used in detector photon geometry colculations
     double anglei; // angle of intersection between photon and detector plane
+
+    // Beam Parameters //
+    double xl = 0.0; double yl = 0.0; double zl = 0.0; // position of the laser source in (m)
+    double beamRad = 0.5E-2; // beam radius (m)
+    double beamDiv = 2E-3; // beam divergence (radians)
+
+
+      //////////////////////////////////////////
+     ///// Define Water Column Parameters//////
+    //////////////////////////////////////////
 
     //  IOPs //
     double a; //absorption coefficient (m^-^1)
@@ -85,10 +96,8 @@ int main (){
     double omega; // single scattering albedo
 
 
-    // Define Mie Parameters //
-
-    // Refractive Index
-    double refMed = 1.33;
+    // Mie Parameters //
+    double refMed = 1.33; // Refractive Index
     //double refPart = 1.45; //(1.3, 0.008); // relative refractive index
     //double refRel = 1.08;//refPart/refMed;
 
@@ -122,9 +131,10 @@ int main (){
         angles[i] = (double)i*dang; // create an array of angles for mie calculations
     }
 
-    // Particle Size Distribution Parameters
+    ///////////////////////////////////////////////////
+    ////// Particle Size Distribution Parameters//////
+    /////////////////////////////////////////////////
 
-    // Set PSD parameters
     double Dmin = 0.1; // minimum particle diameter (um);
     double Dmax = 150.0; // maximum particle diameter (um);
     int diamBin = 100; // # of diameter bins;
@@ -148,7 +158,19 @@ int main (){
       sizeParam[i] = 2*pi*radius[i]*refMed / lambda; // mie theory size parameter
     }
 
-    // Define Mie Output Variables and Pointers
+    // Define Distribution //
+    double k = 5E21; // differential number concentration at particle size D0
+
+    double jungeSlope = 4.0; // slope of the junge distribution
+
+    for (int i = 0;i<diamBin; i++){
+        diffNumDistribution[i] = k*pow((D[i]/D[0]),(-1*jungeSlope)); // # of particles m^-3 um^-1
+    }
+
+    ///////////////////////////////////////////////////
+    ////// Mie Output Variables and Pointers /////////
+    /////////////////////////////////////////////////
+
     double Qscat; double Qext; double Qabs; double Qback;  // Mie scattering efficiencies
     double* Qscat_p = &Qscat; double* Qext_p = &Qext; double* Qabs_p = &Qabs; double* Qback_p = &Qback; // pointers to Mie Scattering efficiencies
     double Qb[diamBin]; double Qc[diamBin]; double Qa[diamBin]; double Qba[diamBin];
@@ -185,17 +207,11 @@ int main (){
     double compFunctionI;
     double compFunctionC[nangTot];
 
-    // Define Distribution //
-    double k = 5E21; // differential number concentration at particle size D0
 
-    double jungeSlope = 4.0; // slope of the junge distribution
+    ///////////////////////////////////////////////////
+    /////////////// Mie Calculations /////////////////
+    /////////////////////////////////////////////////
 
-    for (int i = 0;i<diamBin; i++){
-        diffNumDistribution[i] = k*pow((D[i]/D[0]),(-1*jungeSlope)); // # of particles m^-3 um^-1
-    }
-
-
-/////////////////// Bulk Mie Calculations /////////////////////
     // Mie Calculations for Each Size Parameter in the distribution
     //j+1 is used to convert from fortran indexing to c++indexing
     for (int i = 0; i<diamBin; i++){
@@ -275,7 +291,6 @@ int main (){
     vector<double> s12barVec (s12bar, s12bar+sizeof(s12bar) / sizeof(s12bar[0]));
     vector<double> s33barVec (s33bar, s33bar+sizeof(s33bar) / sizeof(s33bar[0]));
     vector<double> s34barVec (s34bar, s34bar+sizeof(s34bar) / sizeof(s34bar[0]));
-
     vector<double> anglesVec (angles, angles+sizeof(angles) / sizeof(angles[0]));
 
 
@@ -339,6 +354,9 @@ int main (){
 //    auto real_rand = std::bind(std::uniform_real_distribution<double>(0,1),
 //                             mt19937(seed));
 
+///////////////////////////////////////////////////
+/////////////// Photon Tracking  /////////////////
+/////////////////////////////////////////////////
 
     // Main Code
     for (int i = 0; i < nPhotons; ++i){      // loop through each individual photon
@@ -356,12 +374,18 @@ int main (){
         //     cout << i << endl;
         // }
 
-        // Photon Position and Direction Initialization
-        double x1 = 0.0; double y1 = 0.0; double z1 = 0.0; // initialize photon position 1
-        double x2 = 0.0; double y2 = 0.0; double z2 = 0.0; // initialize calculation positions for photons
+        // Initial Photon Angles
+        double theta1 = beamDiv * erfinv((double) rand() / (RAND_MAX) * erf(2));
+        double phi1 = (double) rand() / (RAND_MAX) * 2 * pi;
 
-        double mux1 = 0.0; double muy1 = 0.0; double muz1 = 1.0; // initialize new direction cosine variables
-        double mux2 = 0.0; double muy2 = 0.0; double muz2 = 0.0; // initialize new direction cosine calculation variables
+        // Initial Photon Position and Direction
+        double x1 = 0.0; double y1 = 0.0; double z1 = 0.0; // initialize photon position 1
+        double x2; double y2; double z2 ; // initialize calculation positions for photons
+
+        double mux1 = sin(theta1)*cos(phi1);
+        double muy1 = sin(theta1)*sin(phi1);
+        double muz1 = cos(theta1); // initialize new direction cosine variables
+        double mux2; double muy2; double muz2; // initialize new direction cosine calculation variables
 
 
         // Photon Status variable
@@ -379,13 +403,6 @@ int main (){
                <<  0  << arma::endr;
 
         while (status == 1) {   // while the photon is still alive.....
-          // cout << mux1;
-          // cout << ',';
-          // cout << muy1;
-          // cout << ',';
-          // cout << muz1 << endl;
-
-
 
             // Move Photon
             r = -1 * log(((double) rand() / (RAND_MAX)))/c; // generate a random propegation distance
@@ -623,7 +640,9 @@ int main (){
 
 
 
-////////// Function Definitions ////////////
+///////////////////////////////////////////////////
+//////////// Function Definitions ////////////////
+/////////////////////////////////////////////////
 
 // Convert Radians to Degrees
 double rad2Deg(double xrad) {
