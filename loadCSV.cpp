@@ -1,36 +1,51 @@
 #include <fstream>
 #include <iostream>
 #include <string>
+#include <vector>
+#include <cmath>
 
 using namespace std;
 
 int main(){
-  double beamDiv;
-  double beamRad;
-  double xl; double yl; double zl;
+
   int i = 1;
-  string str;
+  vector<string> storageS11;
+  vector<string> storageS12;
+  vector<string> storageS33;
 
-  ifstream sourceCSV("source.csv");
+  string strS11;
+  string strS12;
+  string strS33;
 
-  if(sourceCSV.is_open()){
-    while (sourceCSV.good()){
-      if (i < 11){
-        getline(sourceCSV,str,'\n');
+  double dbl;
+
+  ifstream seawaterCSV("seawaterVSFZHH.csv");
+  if(seawaterCSV.is_open()){
+    while (seawaterCSV.good()){
+        getline(seawaterCSV,strS11,',');
+        getline(seawaterCSV,strS12,',');
+        getline(seawaterCSV,strS33,'\n');
+
+        storageS11.push_back(strS11);
+        storageS12.push_back(strS12);
+        storageS33.push_back(strS33);
+
         i++;
-      }
-      else{
-        getline(sourceCSV,beamDiv,'\n');
-        getline(sourceCSV,beamRad,'\n');
-        getline(sourceCSV,xl,'\n');
-        getline(sourceCSV,yl,'\n');
-        getline(sourceCSV,yl,'\n');
-
-
-      }
     }
   }
   else{
-    cout >> 'Error Opening "source.csv"' >> endl
+    cout << "Error Opening" << endl;
+  }
+  double seawaterS11[storageS11.size()];
+  double seawaterS12[storageS11.size()];
+  double seawaterS33[storageS11.size()];
+
+  for (int i = 0; i<storageS11.size()-1; i++){
+    seawaterS11[i] = stod(storageS11[i]);
+    seawaterS12[i] = stod(storageS12[i]);
+    seawaterS33[i] = stod(storageS33[i]);
+
+    cout << seawaterS33[i] << endl;
+
   }
 }
