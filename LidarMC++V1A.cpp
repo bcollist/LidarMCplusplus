@@ -48,8 +48,8 @@ int main (){
     cout << "start" << endl;
     auto start=chrono::system_clock::now(); // start a timer
 
-    /////////////////////////////////////
-    ///// Input FIle Parameters/////////
+      ///////////////////////////////////
+     //// Input FIle Parameters/////////
     ///////////////////////////////////
 
     string fileID;
@@ -59,8 +59,8 @@ int main (){
     cout<<"Input File Identifier"<<endl;
     cin>>fileID;
 
-    /////////////////////////////////////
-    ////// Define Lidar Parameters//////
+      ///////////////////////////////////
+     ///// Define Lidar Parameters//////
     ///////////////////////////////////
 
     // Detector Parameters //
@@ -80,7 +80,10 @@ int main (){
     double anglei; // angle of intersection between photon and detector plane
 
     // Beam Parameters //
+    double Cwater = 0.225; // speed of light in water (m ns^-1)
     double xl = 0.0; double yl = 0.0; double zl = 0.0; // position of the laser source in (m)
+    double pulseWidth = 7; // gausian pulse width FWHM (ns)
+    double pulseWidth_m = pulseWidth * Cwater; // gaussian pulse width FWHM (m)
     double beamRad = 0.5E-2; // beam radius (m)
     double beamDiv = 2E-3; // beam divergence (radians)
 
@@ -118,8 +121,7 @@ int main (){
     // Wavelength
     double lambda = 0.532; // lidar wavelength in a vaccuum (um)
     double lambdaMed = lambda/refMed; // Lidar Wavelength in Medium (um)
-    double kMed = 2*pi/lambdaMed*1e-6; // Lidar wavenumber in Medium; convert lambda to (m)
-
+    double kMed = 2*pi/(lambdaMed*1e-6); // Lidar wavenumber in Medium; convert lambda to (m)
     // Angles
     const int nang = 455; // number of angles between 0-90
     const int nangTot = (2*nang-1);
@@ -141,13 +143,14 @@ int main (){
     double fac = pow((Dmax/Dmin),(1.0/(diamBin-1.0))); // exponential factor necessary for defining logarithmically spaced diameter bins
 
     // Initialize Particle Size Arrays
-    double radius[diamBin]; double D[diamBin]; double Dm[diamBin]; // initialize particle diameters in um and m
+    double radius[diamBin]; double D[diamBin]; double Dm[diamBin]; // initialize particle radius and diameters in um and m
     double sizeParam[diamBin]; // initialie mie size parameter
     double diffNumDistribution[diamBin]; //initialize array containing a differential number distribution of particles diameters
 
     // Diameter Array
     for (int i=0; i<diamBin; i++){ // generate an array of particle diameters
       D[i]=Dmin*pow(fac,(i)); // define the diameter bins
+      Dm[i] = D[i] * 1E-6; // define a diameter bin in units of meters
     }
     // Radius Array
     for (int i=0; i<diamBin; i++){ // generate an array of particle diameters
@@ -207,9 +210,15 @@ int main (){
     double compFunctionI;
     double compFunctionC[nangTot];
 
+      /////////////////////////////////////////////////
+     ///// Variables loaded from other files /////////
+    /////////////////////////////////////////////////
 
-    ///////////////////////////////////////////////////
-    /////////////// Mie Calculations /////////////////
+    double s11H2O[nangTot]; // S11 Mueller matrix element of pure water
+    double s12H2O[nangTot]; // S12 Mueller matrix element of pure water
+    double s33H20[nangTot]; // S33 Mueller matrix element of pure water
+      /////////////////////////////////////////////////
+     ////////////// Mie Calculations /////////////////
     /////////////////////////////////////////////////
 
     // Mie Calculations for Each Size Parameter in the distribution
@@ -248,12 +257,13 @@ int main (){
       }
     // If you integrate over particle diameter, you get the VSF
     // or you can integrate over the size parameters
-    s11bar[i] = (1.0/(kMed*kMed)) * trapz(sizeParam,integrandArray11,diamBin);
-    s12bar[i] = (1.0/(kMed*kMed)) * trapz(sizeParam,integrandArray12,diamBin);
-    s33bar[i] = (1.0/(kMed*kMed)) * trapz(sizeParam,integrandArray33,diamBin);
-    s34bar[i] = (1.0/(kMed*kMed)) * trapz(sizeParam,integrandArray34,diamBin);
+    s11bar[i] = (1.0/(kMed*kMed)) * trapz(Dm,integrandArray11,diamBin);
+    s12bar[i] = (1.0/(kMed*kMed)) * trapz(Dm,integrandArray12,diamBin);
+    s33bar[i] = (1.0/(kMed*kMed)) * trapz(Dm,integrandArray33,diamBin);
+    s34bar[i] = (1.0/(kMed*kMed)) * trapz(Dm,integrandArray34,diamBin);
     // add the elements of the mueller matrix of seawater here
     compFunction[i] = (s11bar[i] + abs(s12bar[i])) * sin(angles[i]);
+    cout << s11bar[i] << endl;
     }
 
 // Rejection Method From Jallion and Saint-James 2003
@@ -347,7 +357,7 @@ int main (){
     //nPhotons = 10000 // number of photons to trace
     //Photons = 100000 // number of photons to trace
     //nPhotons = 1000000 // number of photons to trace
-    int nPhotons = 1000000; // number of photons to trace
+    int nPhotons = 10000000; // number of photons to trace
 
     // Predefined Working Variables
 //    mt19937::result_type seed = chrono::high_resolution_clock::now().time_since_epoch().count(); // seed the random number generator

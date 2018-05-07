@@ -109,7 +109,7 @@ int main (){
     // Wavelength
     double lambda = 0.532; // lidar wavelength in a vaccuum (um)
     double lambdaMed = lambda/refMed; // Lidar Wavelength in Medium (um)
-    double kMed = 2*pi/lambdaMed*1e-6; // Lidar wavenumber in Medium; convert lambda to (m)
+    double kMed = 2*pi/(lambdaMed*1e-6); // Lidar wavenumber in Medium; convert lambda to (m)
 
     // Angles
     const int nang = 500; // number of angles between 0-90
