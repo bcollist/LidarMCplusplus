@@ -5,7 +5,7 @@ CC=g++-7
 CFLAG = -std=c++11 -O2
 
 # Build Target Executable
-TARGET = LidarMC++V1A
+TARGET = LidarMC++
 
 # LINKER
 LINKER = -larmadillo

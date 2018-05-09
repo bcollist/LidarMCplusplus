@@ -46,6 +46,6 @@ int main(){
     seawaterS33[i] = stod(storageS33[i]);
 
     cout << seawaterS33[i] << endl;
-
+    
   }
 }

@@ -49,7 +49,7 @@ int main (){
     auto start=chrono::system_clock::now(); // start a timer
 
       ///////////////////////////////////
-     //// Input FIle Parameters/////////
+     //// Input FIle Parameters ////////
     ///////////////////////////////////
 
     string fileID;
@@ -59,8 +59,22 @@ int main (){
     cout<<"Input File Identifier"<<endl;
     cin>>fileID;
 
+      /////////////////////////////////////
+     //////////// Run Type ///////////////
+    /////////////////////////////////////
+
+    // Type 1:
+    //  inputs: FOV, real refractive index, imaginary refractive index
+    //  IOPs are generated from the particle refractive indices
+
+    // Type 2:
+    // inputs: FOV, real refractive index, imaginary refractive indexing
+    // Scattering phase function generated from Mie Theory. a and b defined by user.
+
+    int runType = 1;
+
       ///////////////////////////////////
-     ///// Define Lidar Parameters//////
+     ///// Define Lidar Parameters /////
     ///////////////////////////////////
 
     // Detector Parameters //
@@ -101,15 +115,12 @@ int main (){
 
     // Mie Parameters //
     double refMed = 1.33; // Refractive Index
-    //double refPart = 1.45; //(1.3, 0.008); // relative refractive index
-    //double refRel = 1.08;//refPart/refMed;
 
     // Refractive Index  -  Hard-coded
     // double nRe = 1.05;
     // double nIm = 0.006;
 
     // Refractive Index  - User Defined
-
     double nRe; double nIm; // real and imaginary particle refractive index
     cout<<"Input Real Refractive Index"<<endl;
     cin>>nRe; // real refractive index
@@ -122,6 +133,7 @@ int main (){
     double lambda = 0.532; // lidar wavelength in a vaccuum (um)
     double lambdaMed = lambda/refMed; // Lidar Wavelength in Medium (um)
     double kMed = 2*pi/(lambdaMed*1e-6); // Lidar wavenumber in Medium; convert lambda to (m)
+
     // Angles
     const int nang = 455; // number of angles between 0-90
     const int nangTot = (2*nang-1);
@@ -133,8 +145,8 @@ int main (){
         angles[i] = (double)i*dang; // create an array of angles for mie calculations
     }
 
-    ///////////////////////////////////////////////////
-    ////// Particle Size Distribution Parameters//////
+      /////////////////////////////////////////////////
+     ///// Particle Size Distribution Parameters//////
     /////////////////////////////////////////////////
 
     double Dmin = 0.1; // minimum particle diameter (um);
@@ -214,10 +226,6 @@ int main (){
      ///// Variables loaded from other files /////////
     /////////////////////////////////////////////////
 
-    //double s11seawater[nangTot]; // S11 Mueller matrix element of pure water
-    //double s12seawater[nangTot]; // S12 Mueller matrix element of pure water
-    //double s33seawater[nangTot]; // S33 Mueller matrix element of pure water
-
     vector<string> storageS11;
     vector<string> storageS12;
     vector<string> storageS33;
@@ -253,10 +261,8 @@ int main (){
       seawaterS11[i] = stod(storageS11[i]);
       seawaterS12[i] = stod(storageS12[i]);
       seawaterS33[i] = stod(storageS33[i]);
+      cout << seawaterS11[i] << endl;
     }
-
-
-
 
 
       /////////////////////////////////////////////////
@@ -300,12 +306,14 @@ int main (){
     // If you integrate over particle diameter, you get the VSF
     // or you can integrate over the size parameters
     s11bar[i] = (1.0/(kMed*kMed)) * trapz(Dm,integrandArray11,diamBin);
+    s11bar[i] += seawaterS11[i]; // add the contribution from seawater
     s12bar[i] = (1.0/(kMed*kMed)) * trapz(Dm,integrandArray12,diamBin);
+    s12bar[i] += seawaterS12[i]; // add the contribution from seawater
     s33bar[i] = (1.0/(kMed*kMed)) * trapz(Dm,integrandArray33,diamBin);
+    s33bar[i] += seawaterS33[i]; // add the contribution from seawater
     s34bar[i] = (1.0/(kMed*kMed)) * trapz(Dm,integrandArray34,diamBin);
     // add the elements of the mueller matrix of seawater here
     compFunction[i] = (s11bar[i] + abs(s12bar[i])) * sin(angles[i]);
-    cout << s11bar[i] << endl;
     }
 
 // Rejection Method From Jallion and Saint-James 2003
@@ -331,12 +339,22 @@ int main (){
       Dm[i] = D[i] * 1E-6; // diameter converted to meters
     }
 
+    // if (runType == 1){
     // IOPs - calculated from Mie Theory
     a = trapz(Dm,aInt,diamBin); // absorption coefficient(m^-1)
     b = trapz(Dm,bInt,diamBin); // scattering coefficient (m^-1)
     //c = trapz(Dm,cInt,diamBin); // beam attenuation coefficient (m^-1)
+    // }
+
+    // if (runType == 2){
+    // IOPs - defined by user
+    // a = 0.1; // absorption coefficient(m^-1)
+    // b = 0.5; // scattering coefficient (m^-1)
+    // }
+
     c = a+b;
     omega = b/c; // single scattering albedo
+
 
     vector<double> compFunctionVec (compFunctionC, compFunctionC+sizeof(compFunctionC) / sizeof(compFunctionC[0]));
     vector<double> s11barVec (s11bar, s11bar+sizeof(s11bar) / sizeof(s11bar[0]));
@@ -401,7 +419,6 @@ int main (){
     //nPhotons = 1000000 // number of photons to trace
     int nPhotons = 10000000; // number of photons to trace
 
-    // Predefined Working Variables
 //    mt19937::result_type seed = chrono::high_resolution_clock::now().time_since_epoch().count(); // seed the random number generator
 //    auto real_rand = std::bind(std::uniform_real_distribution<double>(0,1),
 //                             mt19937(seed));

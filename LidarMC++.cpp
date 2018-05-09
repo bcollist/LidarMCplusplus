@@ -1,16 +1,16 @@
-#include <cstdlib>
-#include <cstdio>
-#include <cmath>
-#include <ctime>
-#include <iostream>
-#include <fstream>
-#include <random>
-#include <chrono>
-#include <vector>
-#include <armadillo>
+#include <cstdlib> // contains the standard c++ libraries
+#include <cmath> // contains the c++ math libraries
+#include <iostream> // contains input/output functions (ie. cout <<)
+#include <fstream> // contains function that allow file manipulation
+#include <random> // contains random number generation functions
+#include <chrono> // contains functions that deal with time
+#include <vector> // contains vector notations
+#include <armadillo> // Armadillo linear algebra
+#include <complex> // allows for complex number notation
+#include <string> // string stuff
 #include "spline.hpp" // https://github.com/ttk592/spline/
-#include <complex>
-#include <string>
+#include "erfinv.hpp" // https://gist.github.com/lakshayg/d80172fe5ae3c5d2c2aedb53c250320e
+
 
 using namespace std;
 
@@ -40,70 +40,124 @@ double gammaCalc(double muz1, double muz2, double theta, double phi); // calcula
 
 // Mie Calculations
 int bhmie(double x, complex<double> refrel, int nang, double* Qscat_p, double* Qext_p, double* Qabs_p, double* Qback_p, complex<double>* S1_p, complex<double>* S2_p); // mie calculations
-
 double trapz(double x[], double y[], int size); // trapezoidal integration function
 
 // main function
 int main (){
+
     cout << "start" << endl;
     auto start=chrono::system_clock::now(); // start a timer
-    //////////////////////////// define constants //////////////////////////////////
 
-    // Input FIle Parameters
+      ///////////////////////////////////
+     //// Input File Parameters ////////
+    ///////////////////////////////////
+
+    string dummyLine; // use this variable to dump variable description lines
+    string temp; // temporary string variable
+
+    // Run Parameters
     string fileID;
+    int runType;
+    int nPhotons;
+
+    // detection parameters
+    double FOV;
+
+    // mie parameters
+    double nRe; // real refractive index
+    double nIm; // imaginary refractive index
+
+    // IOPs
+    double a; // absorption coefficient (m-1)
+    double b; // scattering coefficient (m-1)
+    double c; // attenuation coefficient (m-1)
+    double omega; //
+
+    // Particle Size Distribution
+    double Dmin;
+    double Dmax;
+    double k;
+    double jungeSlope;
+
     string photonFile("photon"); // first part of photon tracing filename
     string signalFile("signal"); // first part of signal trcking filename
 
-    cout<<"Input File Identifier"<<endl;
-    cin>>fileID;
-    ////// Define Lidar Parameters//////
+    ifstream lidarMCinputCSV("lidarMCinput.csv"); // open up a file stream
+    if (lidarMCinputCSV.is_open()){
+      getline(lidarMCinputCSV,dummyLine,','); // throw away variable description
+      getline(lidarMCinputCSV,fileID,'\n'); // load file  variable
+      getline(lidarMCinputCSV,dummyLine,','); // throw away variable description
+      getline(lidarMCinputCSV,temp,'\n'); // load file  variable
+      runType = stoi(temp);
+      getline(lidarMCinputCSV,dummyLine,','); // throw away variable description
+      getline(lidarMCinputCSV,temp,'\n'); // load file  variable
+      nPhotons = stoi(temp);
+      getline(lidarMCinputCSV,dummyLine,','); // throw away variable description
+      getline(lidarMCinputCSV,temp,'\n'); // load file  variable
+      FOV = stod(temp);
+      getline(lidarMCinputCSV,dummyLine,','); // throw away variable description
+      getline(lidarMCinputCSV,temp,'\n'); // load file  variable
+      nRe = stod(temp);
+      getline(lidarMCinputCSV,dummyLine,','); // throw away variable description
+      getline(lidarMCinputCSV,temp,'\n'); // load file  variable
+      nIm = stod(temp);
 
-    // Detector Size and FOV //
-    double detectorRad = 1.5E-1; // number of photons to trace
-    //double scatLimit = 4; // number of scattering events to trace
+      if (runType == 1){
+      getline(lidarMCinputCSV,dummyLine,'\n'); // throw away variable description
+      getline(lidarMCinputCSV,dummyLine,'\n'); // load file  variable
+      }
 
-    // Predefined FOV
-    //double FOV = deg2Rad(10); // half-angle FOV; enter in degrees -> converts to rad
+      else if (runType == 2){
+      getline(lidarMCinputCSV,dummyLine,','); // throw away variable description
+      getline(lidarMCinputCSV,temp,'\n'); // load file  variable
+      a = stod(temp);
+      getline(lidarMCinputCSV,dummyLine,'\n'); // load file  variable
+      getline(lidarMCinputCSV,dummyLine,'\n'); // load file  variable
+      b = stod(temp);
+      }
 
-    // User Input FOV
-    double FOV;  //FOV variable
-    cout<<"Input FOV in Degrees"<<endl;
-    cin>>FOV;
-    FOV=deg2Rad(FOV);
+      getline(lidarMCinputCSV,dummyLine,','); // throw away variable description
+      getline(lidarMCinputCSV,temp,'\n'); // load file  variable
+      Dmin = stod(temp);
+      getline(lidarMCinputCSV,dummyLine,','); // throw away variable description
+      getline(lidarMCinputCSV,temp,'\n'); // load file  variable
+      Dmax = stod(temp);
+      getline(lidarMCinputCSV,dummyLine,','); // throw away variable description
+      getline(lidarMCinputCSV,temp,'\n'); // load file  variable
+      k = stod(temp);
+      getline(lidarMCinputCSV,dummyLine,','); // throw away variable description
+      getline(lidarMCinputCSV,temp,'\n'); // load file  variable
+      jungeSlope = stod(temp);
+    }
+    cout << Dmax << endl;
+      ///////////////////////////////////
+     ///// Define Lidar Parameters /////
+    ///////////////////////////////////
 
 
+    // Detector Parameters //
+    double detectorRad = 1.5E-1; // detector radius
+    FOV=deg2Rad(FOV); // convert FOV from degrees to radians
 
-    // detector position
     double xd = 0.0; double yd = 0.0; double zd = 0.0; // position of the detector in (m)
     double fd; // variable used in detector photon geometry colculations
     double anglei; // angle of intersection between photon and detector plane
 
-    //  IOPs //
-    double a; //absorption coefficient (m^-^1)
-    double b; //scattering coefficient (m^-^1)
-    double c; //bema attenuation coefficient (m^-^1)
-    double omega; // single scattering albedo
+    // Beam Parameters //
+    double Cwater = 0.225; // speed of light in water (m ns^-1)
+    double xl = 0.0; double yl = 0.0; double zl = 0.0; // position of the laser source in (m)
+    double pulseWidth = 7; // gausian pulse width FWHM (ns)
+    double pulseWidth_m = pulseWidth * Cwater; // gaussian pulse width FWHM (m)
+    double beamRad = 0.5E-2; // beam radius (m)
+    double beamDiv = 2E-3; // beam divergence (radians)
 
 
-    // Define Mie Parameters //
+      //////////////////////////////////////////
+     ///// Define Water Column Parameters//////
+    //////////////////////////////////////////
 
-    // Refractive Index
-    double refMed = 1.33;
-    //double refPart = 1.45; //(1.3, 0.008); // relative refractive index
-    //double refRel = 1.08;//refPart/refMed;
-
-    // Refractive Index  -  Hard-coded
-    // double nRe = 1.05;
-    // double nIm = 0.006;
-
-    // Refractive Index  - User Defined
-
-    double nRe; double nIm; // real and imaginary particle refractive index
-    cout<<"Input Real Refractive Index"<<endl;
-    cin>>nRe; // real refractive index
-    cout<<"Input Imaginary Refractive Index"<<endl;
-    cin>>nIm; // imaginary refractive index
-
+    // Mie Parameters //
+    double refMed = 1.33; // Refractive Index of Water
     complex<double> refRel = complex<double>(nRe,nIm); // refRel stores the refractive index as a complex double
 
     // Wavelength
@@ -112,7 +166,7 @@ int main (){
     double kMed = 2*pi/(lambdaMed*1e-6); // Lidar wavenumber in Medium; convert lambda to (m)
 
     // Angles
-    const int nang = 500; // number of angles between 0-90
+    const int nang = 455; // number of angles between 0-90
     const int nangTot = (2*nang-1);
     double dang = pi/2/(nang-1);
     double angles[nangTot];
@@ -122,22 +176,23 @@ int main (){
         angles[i] = (double)i*dang; // create an array of angles for mie calculations
     }
 
-    // Particle Size Distribution Parameters
+      /////////////////////////////////////////////////
+     ///// Particle Size Distribution Parameters//////
+    /////////////////////////////////////////////////
 
-    // Set PSD parameters
-    double Dmin = 0.1; // minimum particle diameter (um);
-    double Dmax = 150.0; // maximum particle diameter (um);
+    // PSD bin definitions
     int diamBin = 100; // # of diameter bins;
     double fac = pow((Dmax/Dmin),(1.0/(diamBin-1.0))); // exponential factor necessary for defining logarithmically spaced diameter bins
 
     // Initialize Particle Size Arrays
-    double radius[diamBin]; double D[diamBin]; double Dm[diamBin]; // initialize particle diameters in um and m
+    double radius[diamBin]; double D[diamBin]; double Dm[diamBin]; // initialize particle radius and diameters in um and m
     double sizeParam[diamBin]; // initialie mie size parameter
     double diffNumDistribution[diamBin]; //initialize array containing a differential number distribution of particles diameters
 
     // Diameter Array
     for (int i=0; i<diamBin; i++){ // generate an array of particle diameters
       D[i]=Dmin*pow(fac,(i)); // define the diameter bins
+      Dm[i] = D[i] * 1E-6; // define a diameter bin in units of meters
     }
     // Radius Array
     for (int i=0; i<diamBin; i++){ // generate an array of particle diameters
@@ -148,7 +203,14 @@ int main (){
       sizeParam[i] = 2*pi*radius[i]*refMed / lambda; // mie theory size parameter
     }
 
-    // Define Mie Output Variables and Pointers
+    // Define Jungian Distribution //
+    for (int i = 0;i<diamBin; i++){
+        diffNumDistribution[i] = k*pow((D[i]/D[0]),(-1*jungeSlope)); // # of particles m^-3 um^-1
+    }
+    ///////////////////////////////////////////////////
+    ////// Mie Output Variables and Pointers /////////
+    /////////////////////////////////////////////////
+
     double Qscat; double Qext; double Qabs; double Qback;  // Mie scattering efficiencies
     double* Qscat_p = &Qscat; double* Qext_p = &Qext; double* Qabs_p = &Qabs; double* Qback_p = &Qback; // pointers to Mie Scattering efficiencies
     double Qb[diamBin]; double Qc[diamBin]; double Qa[diamBin]; double Qba[diamBin];
@@ -185,17 +247,53 @@ int main (){
     double compFunctionI;
     double compFunctionC[nangTot];
 
-    // Define Distribution //
-    double k = 5E21; // differential number concentration at particle size D0
+      /////////////////////////////////////////////////
+     ///// Variables loaded from other files /////////
+    /////////////////////////////////////////////////
 
-    double jungeSlope = 4.0; // slope of the junge distribution
+    vector<string> storageS11;
+    vector<string> storageS12;
+    vector<string> storageS33;
 
-    for (int i = 0;i<diamBin; i++){
-        diffNumDistribution[i] = k*pow((D[i]/D[0]),(-1*jungeSlope)); // # of particles m^-3 um^-1
+    string strS11;
+    string strS12;
+    string strS33;
+
+
+    ifstream seawaterCSV("seawaterVSFZHH.csv");
+    int i = 1;
+    if(seawaterCSV.is_open()){
+      while (seawaterCSV.good()){
+          getline(seawaterCSV,strS11,',');
+          getline(seawaterCSV,strS12,',');
+          getline(seawaterCSV,strS33,'\n');
+
+          storageS11.push_back(strS11);
+          storageS12.push_back(strS12);
+          storageS33.push_back(strS33);
+
+          i++;
+      }
+    }
+    else{
+      cout << "Error Opening" << endl;
+    }
+    double seawaterS11[storageS11.size()];
+    double seawaterS12[storageS11.size()];
+    double seawaterS33[storageS11.size()];
+
+    for (int i = 0; i<storageS11.size()-1; i++){
+      seawaterS11[i] = stod(storageS11[i]);
+      seawaterS12[i] = stod(storageS12[i]);
+      seawaterS33[i] = stod(storageS33[i]);
+      //cout << seawaterS11[i] << endl;
     }
 
 
-/////////////////// Bulk Mie Calculations /////////////////////
+      /////////////////////////////////////////////////
+     ////////////// Mie Calculations /////////////////
+    /////////////////////////////////////////////////
+
     // Mie Calculations for Each Size Parameter in the distribution
     //j+1 is used to convert from fortran indexing to c++indexing
     for (int i = 0; i<diamBin; i++){
@@ -211,6 +309,7 @@ int main (){
       Qa[i]=Qabs_p[0]; // absorption efficiency
       Qc[i]=Qext_p[0]; // extinction efficiency
       Qba[i]=Qback_p[0];
+      //cout << sizeParam[i] << endl;
     }
 
     // Define integrand to calculate bulk mueller atrix properties
@@ -230,15 +329,20 @@ int main (){
         integrandArray33[j] = integrandS33[i][j];
         integrandArray34[j] = integrandS34[i][j];
       }
-    // If you integrate over diameter, S11 = VSF
-    s11bar[i] = (1.0/(kMed*kMed)) * trapz(sizeParam,integrandArray11,diamBin);
-    s12bar[i] = (1.0/(kMed*kMed)) * trapz(sizeParam,integrandArray12,diamBin);
-    s33bar[i] = (1.0/(kMed*kMed)) * trapz(sizeParam,integrandArray33,diamBin);
-    s34bar[i] = (1.0/(kMed*kMed)) * trapz(sizeParam,integrandArray34,diamBin);
+    // If you integrate over particle diameter, you get the VSF
+    // or you can integrate over the size parameters
+    s11bar[i] = (1.0/(kMed*kMed)) * trapz(Dm,integrandArray11,diamBin);
+    s11bar[i] += seawaterS11[i]; // add the contribution from seawater
+    s12bar[i] = (1.0/(kMed*kMed)) * trapz(Dm,integrandArray12,diamBin);
+    s12bar[i] += seawaterS12[i]; // add the contribution from seawater
+    s33bar[i] = (1.0/(kMed*kMed)) * trapz(Dm,integrandArray33,diamBin);
+    s33bar[i] += seawaterS33[i]; // add the contribution from seawater
+    s34bar[i] = (1.0/(kMed*kMed)) * trapz(Dm,integrandArray34,diamBin);
+    // add the elements of the mueller matrix of seawater here
     compFunction[i] = (s11bar[i] + abs(s12bar[i])) * sin(angles[i]);
     }
 
-    // Rejection Method From Jallion and Saint-James 2003
+// Rejection Method From Jallion and Saint-James 2003
     compFunctionI = trapz(angles,compFunction,nangTot); // find integral of compFunction
 
     compFunctionC[0] = 0.0; //initialize first element of cumulative comp function
@@ -248,7 +352,7 @@ int main (){
     }
 
     for (int i = 1; i<nangTot; i++){ // normalize the cumulative comp function to the integral
-        compFunctionC[i] = compFunctionC[i]/compFunctionI;
+      compFunctionC[i] = compFunctionC[i]/compFunctionI;
     }
 
     // Calculate IOPs
@@ -261,20 +365,21 @@ int main (){
       Dm[i] = D[i] * 1E-6; // diameter converted to meters
     }
 
-    // // IOPs - User Input
-    // cout<<"a=";
-    // cin>>a; // user defines absorption coefficient
-    // cout<<"b=";
-    // cin>>b; // user defines scattering coefficient
-    // c=a+b; // beamm attenuation coefficient
-    // omega = b/c; // single-scattering albedo
+    // if (runType == 1){
+    // IOPs - calculated from Mie Theory
+    a = trapz(Dm,aInt,diamBin); // absorption coefficient(m^-1)
+    b = trapz(Dm,bInt,diamBin); // scattering coefficient (m^-1)
+    //c = trapz(Dm,cInt,diamBin); // beam attenuation coefficient (m^-1)
+    // }
 
-    // IOPs - User Input
-    a = 0.2; // absorption coefficient (m^-1)
-    b = 0.7; // scattering coefficient (m^-1)
-    c=a+b; // beam attenuation coefficient (m^-1)
-    omega = b/c; // single-scattering albedo
+    // if (runType == 2){
+    // IOPs - defined by user
+    // a = 0.1; // absorption coefficient(m^-1)
+    // b = 0.5; // scattering coefficient (m^-1)
+    // }
 
+    c = a+b;
+    omega = b/c; // single scattering albedo
 
 
     vector<double> compFunctionVec (compFunctionC, compFunctionC+sizeof(compFunctionC) / sizeof(compFunctionC[0]));
@@ -282,7 +387,6 @@ int main (){
     vector<double> s12barVec (s12bar, s12bar+sizeof(s12bar) / sizeof(s12bar[0]));
     vector<double> s33barVec (s33bar, s33bar+sizeof(s33bar) / sizeof(s33bar[0]));
     vector<double> s34barVec (s34bar, s34bar+sizeof(s34bar) / sizeof(s34bar[0]));
-
     vector<double> anglesVec (angles, angles+sizeof(angles) / sizeof(angles[0]));
 
 
@@ -334,36 +438,29 @@ int main (){
 
     double I; double Irand;
 
-    // Mont Carlo parameters
-    //nPhotons = 1000 // number of photons to trace
-    //nPhotons = 10000 // number of photons to trace
-    //Photons = 100000 // number of photons to trace
-    //nPhotons = 1000000 // number of photons to trace
-    int nPhotons = 100000000; // number of photons to trace
-
-    // Predefined Working Variables
 //    mt19937::result_type seed = chrono::high_resolution_clock::now().time_since_epoch().count(); // seed the random number generator
 //    auto real_rand = std::bind(std::uniform_real_distribution<double>(0,1),
 //                             mt19937(seed));
 
+///////////////////////////////////////////////////
+/////////////// Photon Tracking  /////////////////
+/////////////////////////////////////////////////
 
     // Main Code
     for (int i = 0; i < nPhotons; ++i){      // loop through each individual photon
 
-        if (i==10){
-            cout << i << endl;
-        }
+        // Initial Photon Angles
+        double theta1 = beamDiv * erfinv((double) rand() / (RAND_MAX) * erf(2));
+        double phi1 = (double) rand() / (RAND_MAX) * 2 * pi;
 
-        if (i == 100000){
-            cout << i << endl;
-        }
-
-        // Photon Position and Direction Initialization
+        // Initial Photon Position and Direction
         double x1 = 0.0; double y1 = 0.0; double z1 = 0.0; // initialize photon position 1
-        double x2 = 0.0; double y2 = 0.0; double z2 = 0.0; // initialize calculation positions for photons
+        double x2; double y2; double z2 ; // initialize calculation positions for photons
 
-        double mux1 = 0.0; double muy1 = 0.0; double muz1 = 1.0; // initialize new direction cosine variables
-        double mux2 = 0.0; double muy2 = 0.0; double muz2 = 0.0; // initialize new direction cosine calculation variables
+        double mux1 = sin(theta1)*cos(phi1);
+        double muy1 = sin(theta1)*sin(phi1);
+        double muz1 = cos(theta1); // initialize new direction cosine variables
+        double mux2; double muy2; double muz2; // initialize new direction cosine calculation variables
 
 
         // Photon Status variable
@@ -371,7 +468,8 @@ int main (){
         double rTotal = 0; // total pathlength variable
         int nScat = 0; // number of scattering events so far
         double weight = 1; // weight of a photon
-        double threshold = 0.01; // 1/10 photons will survive the roulette sequence
+        double threshold = 0.01; // photon weight threshold to enter roulette
+        double rouletteWeight = 0.1; // fraction of photons surviving roulette
 
         // Polarization
         stokes <<  1  << arma::endr     // initialize vertically polarized photon
@@ -411,10 +509,11 @@ int main (){
                         rTotal = rTotal - (r-(fd *r )); // calculate the distance;
                         distance.push_back(rTotal/2); // append the total distance travelled by the photon to the distance vector
 
-                        // Create unpolarized signal
+                        // Create unpolarized signal //
                         signalWeight.push_back(weight); // append photon weight (omega^n) to signal weight vector
 
-                        // Create polarized signal
+                        // Create polarized signal //
+
                         // rotate into the detector reference frame
                         detectAngle = atan2(mux1,muy1);
                         rotationDetector  << 1 << 0 << 0 << 0 << arma::endr
@@ -424,6 +523,8 @@ int main (){
 
                         stokesDetect = rotationDetector * stokes; // rotate stokes vector into the referecne frame of detector
 
+                        // partition signalinto co- and cross- polarized using linear polarization matrices
+                        // ***Warning*** currently does not account for circularly polarized light.
                         coPol = (0.5 * stokesDetect[0] - 0.5 * stokesDetect[1]) * weight;
                         crossPol = (0.5 * stokesDetect[0] + 0.5 * stokesDetect[1]) * weight;
 
@@ -440,7 +541,7 @@ int main (){
             }
                 else{
 
-                  // Rejection Method
+                  // Rejection Method - Jallion et al 2011
                     do{
                         theta = splComp((double) rand() / (RAND_MAX)); //select a random polar scatering angle based off of the comparison function
                         phi = ((double) rand() / (RAND_MAX))*2.0*pi; //select a random azimuthal scattering randomly distributed from 0-2pi
@@ -452,7 +553,7 @@ int main (){
                     muy2 = updateDirCosY(theta, phi, mux1, muy1, muz1); // update the photon Y direction cosine
                     muz2 = updateDirCosZ(theta, phi, mux1, muy1, muz1); // update the photon Z direction cosine
 
-                    // Update Polarization Variables
+                    // Update Polarization Variables //
 
                     // update reference frame rotation angle
                     gamma = gammaCalc(muz1, muz2, theta, phi);
@@ -480,8 +581,8 @@ int main (){
 
                      //Photon Termination Roulette - allows for conservation of energy with unbiased photon termination //
                      if (weight < threshold){ // unbiased roulette termination
-                         if (rand() < 0.1){
-                           weight /= 0.1;
+                         if (rand() < rouletteWeight){ // if random # is less than threshold, survives roulette
+                           weight /= rouletteWeight; //
                          }
                           else {
                              status = 0;
@@ -614,7 +715,9 @@ int main (){
 
 
 
-////////// Function Definitions ////////////
+///////////////////////////////////////////////////
+//////////// Function Definitions ////////////////
+/////////////////////////////////////////////////
 
 // Convert Radians to Degrees
 double rad2Deg(double xrad) {
