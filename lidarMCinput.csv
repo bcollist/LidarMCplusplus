@@ -2,8 +2,8 @@
 runType(1or2),1
 nPhotons,100000
 FOV(degrees),10
-refReal,1.01
-refIm,0.001
+refReal,1.05
+refIm,0.005
 a(m^-1),
 b(m^-1),
 Dmin(um),0.1

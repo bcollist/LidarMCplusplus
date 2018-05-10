@@ -81,33 +81,34 @@ int main (){
 
     string photonFile("photon"); // first part of photon tracing filename
     string signalFile("signal"); // first part of signal trcking filename
+    string muellerFile("mueller"); // first part of signal trcking filename
 
     ifstream lidarMCinputCSV("lidarMCinput.csv"); // open up a file stream
     if (lidarMCinputCSV.is_open()){
       getline(lidarMCinputCSV,dummyLine,','); // throw away variable description
-      getline(lidarMCinputCSV,fileID,'\n'); // load file  variable
+      getline(lidarMCinputCSV,fileID,'\n'); // load fileID to name output files
       getline(lidarMCinputCSV,dummyLine,','); // throw away variable description
-      getline(lidarMCinputCSV,temp,'\n'); // load file  variable
-      runType = stoi(temp);
+      getline(lidarMCinputCSV,temp,'\n'); // load runType into temporary variable
+      runType = stoi(temp); // store runType as an integer
       getline(lidarMCinputCSV,dummyLine,','); // throw away variable description
-      getline(lidarMCinputCSV,temp,'\n'); // load file  variable
-      nPhotons = stoi(temp);
+      getline(lidarMCinputCSV,temp,'\n'); // load # of photons to be run into temporary variable
+      nPhotons = stoi(temp); // store number of photons as an integer
       getline(lidarMCinputCSV,dummyLine,','); // throw away variable description
-      getline(lidarMCinputCSV,temp,'\n'); // load file  variable
-      FOV = stod(temp);
+      getline(lidarMCinputCSV,temp,'\n'); // load FOV into temporary variable
+      FOV = stod(temp); // store FOV as a double
       getline(lidarMCinputCSV,dummyLine,','); // throw away variable description
-      getline(lidarMCinputCSV,temp,'\n'); // load file  variable
-      nRe = stod(temp);
+      getline(lidarMCinputCSV,temp,'\n'); // load the real refractive index into temporary variable
+      nRe = stod(temp); // store the real refractive index as a double
       getline(lidarMCinputCSV,dummyLine,','); // throw away variable description
-      getline(lidarMCinputCSV,temp,'\n'); // load file  variable
-      nIm = stod(temp);
+      getline(lidarMCinputCSV,temp,'\n'); // load imaginary refractive indes into temporary variable
+      nIm = stod(temp); // store the imaginary refractive index as a double
 
-      if (runType == 1){
+      if (runType == 1){ // skip IOPs; calculated from Mie Theory
       getline(lidarMCinputCSV,dummyLine,'\n'); // throw away variable description
       getline(lidarMCinputCSV,dummyLine,'\n'); // load file  variable
       }
 
-      else if (runType == 2){
+      else if (runType == 2){ // load IOPs; ignore Mie Calculations of IOPs
       getline(lidarMCinputCSV,dummyLine,','); // throw away variable description
       getline(lidarMCinputCSV,temp,'\n'); // load file  variable
       a = stod(temp);
@@ -298,7 +299,6 @@ int main (){
     //j+1 is used to convert from fortran indexing to c++indexing
     for (int i = 0; i<diamBin; i++){
       bhmie(sizeParam[i], refRel, nang, Qscat_p, Qext_p, Qabs_p, Qback_p, S1_p, S2_p);
-      //cout<<Qext_p[1]-Qscat_p[1]<< endl;
       for (int j = 0; j<nangTot; j++){
         s11[j][i] = 0.5 * (pow(abs(S2[j+1]),2) + pow(abs(S1[j+1]),2));
         s12[j][i] = 0.5 * (pow(abs(S2[j+1]),2) - pow(abs(S1[j+1]),2));
@@ -365,22 +365,14 @@ int main (){
       Dm[i] = D[i] * 1E-6; // diameter converted to meters
     }
 
-    // if (runType == 1){
+    if (runType == 1){
     // IOPs - calculated from Mie Theory
     a = trapz(Dm,aInt,diamBin); // absorption coefficient(m^-1)
     b = trapz(Dm,bInt,diamBin); // scattering coefficient (m^-1)
     //c = trapz(Dm,cInt,diamBin); // beam attenuation coefficient (m^-1)
-    // }
-
-    // if (runType == 2){
-    // IOPs - defined by user
-    // a = 0.1; // absorption coefficient(m^-1)
-    // b = 0.5; // scattering coefficient (m^-1)
-    // }
-
     c = a+b;
     omega = b/c; // single scattering albedo
-
+    }
 
     vector<double> compFunctionVec (compFunctionC, compFunctionC+sizeof(compFunctionC) / sizeof(compFunctionC[0]));
     vector<double> s11barVec (s11bar, s11bar+sizeof(s11bar) / sizeof(s11bar[0]));
@@ -612,6 +604,60 @@ int main (){
         signalCROSS.at(int(bd/dBin)-1) = signalCROSS[(int(bd/dBin)-1)] + signalCROSSweight[i]; //...add the value of the photon weight to the signal variable at the correct index for its distance bin
     }
 
+    ofstream muellerCSV;
+    // Write File Header
+    muellerCSV.open (muellerFile+fileID+".csv");
+    muellerCSV << "LidarMCplusplus.cpp input file:\n";
+    muellerCSV << "Radius(m),";
+    muellerCSV << detectorRad;
+    muellerCSV << "\n";
+    muellerCSV << "FOV(rad),";
+    muellerCSV << FOV;
+    muellerCSV << "\n";
+    muellerCSV << "a(m^-1),";
+    muellerCSV << a;
+    muellerCSV << "\n";
+    muellerCSV << "b(m^-1),";
+    muellerCSV << b;
+    muellerCSV << "\n";
+    muellerCSV << "c(m^-1),";
+    muellerCSV << c;
+    muellerCSV << "\n";
+    muellerCSV << "Dmin,";
+    muellerCSV << Dmin;
+    muellerCSV << "\n";
+    muellerCSV << "Dmax,";
+    muellerCSV << Dmax;
+    muellerCSV << "\n";
+    muellerCSV << "k,";
+    muellerCSV << k;
+    muellerCSV << "\n";
+    muellerCSV << "Junge,";
+    muellerCSV << jungeSlope;
+    muellerCSV << "\n";
+    muellerCSV << "bulk ref index,";
+    muellerCSV << refRel;
+    muellerCSV << "\n";
+    muellerCSV << "#photons,";
+    muellerCSV << nPhotons;
+    muellerCSV << "\n";
+    muellerCSV << "distance,signal,co,cross\n";
+    // Write Signal
+    for (int j=0; j<(nangTot); j++){
+        muellerCSV << angles[j];
+        muellerCSV << ",";
+        muellerCSV << s11bar[j];
+        muellerCSV << ",";
+        muellerCSV << s12bar[j];
+        muellerCSV << ",";
+        muellerCSV << s33bar[j];
+        muellerCSV << ",";
+        muellerCSV << s34bar[j];
+        muellerCSV << "\n";
+
+    }
+    muellerCSV.close();
+
     ofstream signalCSV;
     // Write File Header
     signalCSV.open (signalFile+fileID+".csv");
@@ -630,6 +676,15 @@ int main (){
     signalCSV << "\n";
     signalCSV << "c(m^-1),";
     signalCSV << c;
+    signalCSV << "\n";
+    signalCSV << "Dmin,";
+    signalCSV << Dmin;
+    signalCSV << "\n";
+    signalCSV << "Dmax,";
+    signalCSV << Dmax;
+    signalCSV << "\n";
+    signalCSV << "k,";
+    signalCSV << k;
     signalCSV << "\n";
     signalCSV << "Junge,";
     signalCSV << jungeSlope;
@@ -676,6 +731,15 @@ int main (){
     photonCSV << "\n";
     photonCSV << "c(m^-1),";
     photonCSV << c;
+    photonCSV << "\n";
+    photonCSV << "Dmin,";
+    photonCSV << Dmin;
+    photonCSV << "\n";
+    photonCSV << "Dmax,";
+    photonCSV << Dmax;
+    photonCSV << "\n";
+    photonCSV << "k,";
+    photonCSV << k;
     photonCSV << "\n";
     photonCSV << "Junge,";
     photonCSV << jungeSlope;
@@ -790,7 +854,7 @@ double intersectionAngle(double x1,double y1,double z1,double x2,double y2,doubl
       <<  0  << arma::endr
       << -1  << arma::endr;   // create a unit vector normal to the plane of the detector at the origin
 
-  v = c2 - c1;   // convert the propegation vector to a unit vector
+  v = c2 - c1;   // convert the propagation vector to a unit vector
 
   angle = atan2(norm(cross(u,v)),dot(u,v)); // calculate the angle between the propegation vector and the vector normal to the detector plane
 
