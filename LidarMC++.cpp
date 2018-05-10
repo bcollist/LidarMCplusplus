@@ -87,6 +87,7 @@ int main (){
     if (lidarMCinputCSV.is_open()){
       getline(lidarMCinputCSV,dummyLine,','); // throw away variable description
       getline(lidarMCinputCSV,fileID,'\n'); // load fileID to name output files
+      cout << fileID << endl;
       getline(lidarMCinputCSV,dummyLine,','); // throw away variable description
       getline(lidarMCinputCSV,temp,'\n'); // load runType into temporary variable
       runType = stoi(temp); // store runType as an integer
