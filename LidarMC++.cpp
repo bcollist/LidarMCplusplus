@@ -71,7 +71,7 @@ int main (){
     double a; // absorption coefficient (m-1)
     double b; // scattering coefficient (m-1)
     double c; // attenuation coefficient (m-1)
-    double omega; //
+    double omega; // single scattering albedo
 
     // Particle Size Distribution
     double Dmin;
@@ -113,11 +113,10 @@ int main (){
       getline(lidarMCinputCSV,dummyLine,','); // throw away variable description
       getline(lidarMCinputCSV,temp,'\n'); // load file  variable
       a = stod(temp);
-      getline(lidarMCinputCSV,dummyLine,'\n'); // load file  variable
-      getline(lidarMCinputCSV,dummyLine,'\n'); // load file  variable
+      getline(lidarMCinputCSV,dummyLine,','); // load file  variable
+      getline(lidarMCinputCSV,temp,'\n'); // load file  variable
       b = stod(temp);
       }
-
       getline(lidarMCinputCSV,dummyLine,','); // throw away variable description
       getline(lidarMCinputCSV,temp,'\n'); // load file  variable
       Dmin = stod(temp);
@@ -131,7 +130,6 @@ int main (){
       getline(lidarMCinputCSV,temp,'\n'); // load file  variable
       jungeSlope = stod(temp);
     }
-    cout << Dmax << endl;
       ///////////////////////////////////
      ///// Define Lidar Parameters /////
     ///////////////////////////////////
@@ -166,7 +164,6 @@ int main (){
     double lambda = 0.532; // lidar wavelength in a vaccuum (um)
     double lambdaMed = lambda/refMed; // Lidar Wavelength in Medium (um)
     double kMed = 2*pi/(lambdaMed*1e-6); // Lidar wavenumber in Medium; convert lambda to (m)
-
     // Angles
     const int nang = 455; // number of angles between 0-90
     const int nangTot = (2*nang-1);
@@ -369,6 +366,7 @@ int main (){
     if (runType == 1){
     // IOPs - calculated from Mie Theory
     a = trapz(Dm,aInt,diamBin); // absorption coefficient(m^-1)
+    a += 0.0444;
     b = trapz(Dm,bInt,diamBin); // scattering coefficient (m^-1)
     //c = trapz(Dm,cInt,diamBin); // beam attenuation coefficient (m^-1)
     c = a+b;
@@ -438,7 +436,6 @@ int main (){
 ///////////////////////////////////////////////////
 /////////////// Photon Tracking  /////////////////
 /////////////////////////////////////////////////
-
     // Main Code
     for (int i = 0; i < nPhotons; ++i){      // loop through each individual photon
 

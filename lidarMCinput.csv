@@ -1,12 +1,12 @@
 fileID,run
 runType(1or2),1
-nPhotons,100000
+nPhotons,1000000
 FOV(degrees),10
 refReal,1.05
-refIm,0.005
-a(m^-1),
-b(m^-1),
+refIm,0.05
+a(m^-1),1
+b(m^-1),1
 Dmin(um),0.1
 Dmax(um),100
-k,1.00E+20
+k,1.00E+21
 Junge,4

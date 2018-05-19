@@ -82,8 +82,8 @@ T erfinv(T x) {
     T r =  0.180625 - 0.25 * x * x;
     T num = (((((((A7 * r + A6) * r + A5) * r + A4) * r + A3) * r + A2) * r + A1) * r + A0);
     T den = (((((((B7 * r + B6) * r + B5) * r + B4) * r + B3) * r + B2) * r + B1) * r + B0);
-    return x * num / den; 
-  } 
+    return x * num / den;
+  }
 
   T r = sqrt(LN2 - log(1.0 - abs_x));
 
@@ -103,5 +103,5 @@ T erfinv(T x) {
   } else {
     return num / den;
   }
-  
+
 }
