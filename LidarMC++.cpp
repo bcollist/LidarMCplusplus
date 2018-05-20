@@ -117,6 +117,7 @@ int main (){
       getline(lidarMCinputCSV,temp,'\n'); // load file  variable
       b = stod(temp);
       }
+
       getline(lidarMCinputCSV,dummyLine,','); // throw away variable description
       getline(lidarMCinputCSV,temp,'\n'); // load file  variable
       Dmin = stod(temp);
@@ -146,7 +147,7 @@ int main (){
     // Beam Parameters //
     double Cwater = 0.225; // speed of light in water (m ns^-1)
     double xl = 0.0; double yl = 0.0; double zl = 0.0; // position of the laser source in (m)
-    double pulseWidth = 7; // gausian pulse width FWHM (ns)
+    double pulseWidth = 7; // gaussian pulse width FWHM (ns)
     double pulseWidth_m = pulseWidth * Cwater; // gaussian pulse width FWHM (m)
     double beamRad = 0.5E-2; // beam radius (m)
     double beamDiv = 2E-3; // beam divergence (radians)
@@ -364,14 +365,16 @@ int main (){
     }
 
     if (runType == 1){
-    // IOPs - calculated from Mie Theory
-    a = trapz(Dm,aInt,diamBin); // absorption coefficient(m^-1)
-    a += 0.0444;
-    b = trapz(Dm,bInt,diamBin); // scattering coefficient (m^-1)
-    //c = trapz(Dm,cInt,diamBin); // beam attenuation coefficient (m^-1)
+      // IOPs - calculated from Mie Theory
+      a = trapz(Dm,aInt,diamBin); // absorption coefficient(m^-1)
+      //a += 0.0444;
+      b = trapz(Dm,bInt,diamBin); // scattering coefficient (m^-1)
+      //c = trapz(Dm,cInt,diamBin); // beam attenuation coefficient (m^-1)
+    }
     c = a+b;
     omega = b/c; // single scattering albedo
-    }
+    cout << "a = " << a << endl;
+    cout << "b = " << b << endl;
 
     vector<double> compFunctionVec (compFunctionC, compFunctionC+sizeof(compFunctionC) / sizeof(compFunctionC[0]));
     vector<double> s11barVec (s11bar, s11bar+sizeof(s11bar) / sizeof(s11bar[0]));
