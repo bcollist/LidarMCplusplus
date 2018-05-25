@@ -260,7 +260,7 @@ int main (){
     string strS33;
 
 
-    ifstream seawaterCSV("seawaterVSFZHH.csv");
+    ifstream seawaterCSV("seawaterVSFZHH.csv"); // csv file containing the mueller matrix of seawater
     int i = 1;
     if(seawaterCSV.is_open()){
       while (seawaterCSV.good()){
@@ -286,7 +286,6 @@ int main (){
       seawaterS11[i] = stod(storageS11[i]);
       seawaterS12[i] = stod(storageS12[i]);
       seawaterS33[i] = stod(storageS33[i]);
-      //cout << seawaterS11[i] << endl;
     }
 
 
@@ -367,14 +366,12 @@ int main (){
     if (runType == 1){
       // IOPs - calculated from Mie Theory
       a = trapz(Dm,aInt,diamBin); // absorption coefficient(m^-1)
-      //a += 0.0444;
+      a += 0.0444; // add the absorption coefficient of water (Pope and Fry)
       b = trapz(Dm,bInt,diamBin); // scattering coefficient (m^-1)
       //c = trapz(Dm,cInt,diamBin); // beam attenuation coefficient (m^-1)
     }
     c = a+b;
     omega = b/c; // single scattering albedo
-    cout << "a = " << a << endl;
-    cout << "b = " << b << endl;
 
     vector<double> compFunctionVec (compFunctionC, compFunctionC+sizeof(compFunctionC) / sizeof(compFunctionC[0]));
     vector<double> s11barVec (s11bar, s11bar+sizeof(s11bar) / sizeof(s11bar[0]));
@@ -442,17 +439,13 @@ int main (){
     // Main Code
     for (int i = 0; i < nPhotons; ++i){      // loop through each individual photon
 
-        // Initial Photon Angles
-        double theta1 = beamDiv * erfinv((double) rand() / (RAND_MAX) * erf(2));
-        double phi1 = (double) rand() / (RAND_MAX) * 2 * pi;
-
         // Initial Photon Position and Direction
         double x1 = 0.0; double y1 = 0.0; double z1 = 0.0; // initialize photon position 1
         double x2; double y2; double z2 ; // initialize calculation positions for photons
 
-        double mux1 = sin(theta1)*cos(phi1);
-        double muy1 = sin(theta1)*sin(phi1);
-        double muz1 = cos(theta1); // initialize new direction cosine variables
+        double mux1 = 0;
+        double muy1 = 0;
+        double muz1 = 1; // initialize new direction cosine variables
         double mux2; double muy2; double muz2; // initialize new direction cosine calculation variables
 
 
