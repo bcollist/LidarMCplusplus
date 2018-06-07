@@ -1,0 +1,12 @@
+fileID,run
+runType(1or2),2
+nPhotons,1000000
+FOV(degrees),10
+refReal,1.05
+refIm,0.005
+a(m^-1),0.0425791
+b(m^-1),0.104066
+Dmin(um),0.1
+Dmax(um),100
+k,1.00E+21
+Junge,4
