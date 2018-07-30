@@ -1,5 +1,5 @@
 # Compiler
-CC=g++-7
+CC=g++-8
 
 # Any compiler flags
 CFLAG = -std=c++11 -O2
@@ -9,11 +9,6 @@ TARGET = LidarMC++
 
 # LINKER
 LINKER = -larmadillo
-
-
-#INCLUDE = $ARMADILLO_ROOT/include
-#LINKER = $ARMADILLO_ROOT/LIB -larmadillo
-
 
 # top-level rule, to compile everything.
 all: $(TARGET)

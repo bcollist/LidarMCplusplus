@@ -63,74 +63,82 @@ int main (){
     // detection parameters
     double FOV;
 
-    // mie parameters
-    double nRe; // real refractive index
-    double nIm; // imaginary refractive index
-
     // IOPs
     double a; // absorption coefficient (m-1)
     double b; // scattering coefficient (m-1)
     double c; // attenuation coefficient (m-1)
     double omega; // single scattering albedo
 
+    // Particle class indices
+    int nClass = 3;
+    int i_phyto = 0;
+    int i_sed = 1;
+    int i_det = 2;
+
+    // mie parameters
+    double nRe[nClass]; // real refractive index
+    double nIm[nClass]; // imaginary refractive index
+    complex<double> refRel[nClass];  //combine real and imaginary refractive indices
+
+
     // Particle Size Distribution
     double Dmin;
     double Dmax;
-    double k;
-    double jungeSlope;
+    double k[nClass]; //differential number concentration at Dmin
+    double jungeSlope[nClass];
 
     string photonFile("photon"); // first part of photon tracing filename
     string signalFile("signal"); // first part of signal trcking filename
     string muellerFile("mueller"); // first part of signal trcking filename
 
-    ifstream lidarMCinputCSV("lidarMCinput.csv"); // open up a file stream
-    if (lidarMCinputCSV.is_open()){
-      getline(lidarMCinputCSV,dummyLine,','); // throw away variable description
-      getline(lidarMCinputCSV,fileID,'\n'); // load fileID to name output files
-      cout << fileID << endl;
-      getline(lidarMCinputCSV,dummyLine,','); // throw away variable description
-      getline(lidarMCinputCSV,temp,'\n'); // load runType into temporary variable
-      runType = stoi(temp); // store runType as an integer
-      getline(lidarMCinputCSV,dummyLine,','); // throw away variable description
-      getline(lidarMCinputCSV,temp,'\n'); // load # of photons to be run into temporary variable
-      nPhotons = stoi(temp); // store number of photons as an integer
-      getline(lidarMCinputCSV,dummyLine,','); // throw away variable description
-      getline(lidarMCinputCSV,temp,'\n'); // load FOV into temporary variable
-      FOV = stod(temp); // store FOV as a double
-      getline(lidarMCinputCSV,dummyLine,','); // throw away variable description
-      getline(lidarMCinputCSV,temp,'\n'); // load the real refractive index into temporary variable
-      nRe = stod(temp); // store the real refractive index as a double
-      getline(lidarMCinputCSV,dummyLine,','); // throw away variable description
-      getline(lidarMCinputCSV,temp,'\n'); // load imaginary refractive indes into temporary variable
-      nIm = stod(temp); // store the imaginary refractive index as a double
-
-      if (runType == 1){ // skip IOPs; calculated from Mie Theory
-      getline(lidarMCinputCSV,dummyLine,'\n'); // throw away variable description
-      getline(lidarMCinputCSV,dummyLine,'\n'); // load file  variable
-      }
-
-      else if (runType == 2){ // load IOPs; ignore Mie Calculations of IOPs
-      getline(lidarMCinputCSV,dummyLine,','); // throw away variable description
-      getline(lidarMCinputCSV,temp,'\n'); // load file  variable
-      a = stod(temp);
-      getline(lidarMCinputCSV,dummyLine,','); // load file  variable
-      getline(lidarMCinputCSV,temp,'\n'); // load file  variable
-      b = stod(temp);
-      }
-
-      getline(lidarMCinputCSV,dummyLine,','); // throw away variable description
-      getline(lidarMCinputCSV,temp,'\n'); // load file  variable
-      Dmin = stod(temp);
-      getline(lidarMCinputCSV,dummyLine,','); // throw away variable description
-      getline(lidarMCinputCSV,temp,'\n'); // load file  variable
-      Dmax = stod(temp);
-      getline(lidarMCinputCSV,dummyLine,','); // throw away variable description
-      getline(lidarMCinputCSV,temp,'\n'); // load file  variable
-      k = stod(temp);
-      getline(lidarMCinputCSV,dummyLine,','); // throw away variable description
-      getline(lidarMCinputCSV,temp,'\n'); // load file  variable
-      jungeSlope = stod(temp);
-    }
+    // ifstream lidarMCinputCSV("lidarMCinput.csv"); // open up a file stream
+    // if (lidarMCinputCSV.is_open()){
+    //   getline(lidarMCinputCSV,dummyLine,','); // throw away variable description
+    //   getline(lidarMCinputCSV,fileID,'\n'); // load fileID to name output files
+    //   cout << fileID << endl;
+    //   getline(lidarMCinputCSV,dummyLine,','); // throw away variable description
+    //   getline(lidarMCinputCSV,temp,'\n'); // load runType into temporary variable
+    //   runType = stoi(temp); // store runType as an integer
+    //   getline(lidarMCinputCSV,dummyLine,','); // throw away variable description
+    //   getline(lidarMCinputCSV,temp,'\n'); // load # of photons to be run into temporary variable
+    //   nPhotons = stoi(temp); // store number of photons as an integer
+    //   getline(lidarMCinputCSV,dummyLine,','); // throw away variable description
+    //   getline(lidarMCinputCSV,temp,'\n'); // load FOV into temporary variable
+    //   FOV = stod(temp); // store FOV as a double
+    //   getline(lidarMCinputCSV,dummyLine,','); // throw away variable description
+    //   getline(lidarMCinputCSV,temp,'\n'); // load the real refractive index into temporary variable
+    //   nRe = stod(temp); // store the real refractive index as a double
+    //   getline(lidarMCinputCSV,dummyLine,','); // throw away variable description
+    //   getline(lidarMCinputCSV,temp,'\n'); // load imaginary refractive indes into temporary variable
+    //   nIm = stod(temp); // store the imaginary refractive index as a double
+    //
+    //   if (runType == 1){ // skip IOPs; calculated from Mie Theory
+    //   getline(lidarMCinputCSV,dummyLine,'\n'); // throw away variable description
+    //   getline(lidarMCinputCSV,dummyLine,'\n'); // load file  variable
+    //   }
+    //
+    //   else if (runType == 2){ // load IOPs; ignore Mie Calculations of IOPs
+    //   getline(lidarMCinputCSV,dummyLine,','); // throw away variable description
+    //   getline(lidarMCinputCSV,temp,'\n'); // load file  variable
+    //   a = stod(temp);
+    //   getline(lidarMCinputCSV,dummyLine,','); // load file  variable
+    //   getline(lidarMCinputCSV,temp,'\n'); // load file  variable
+    //   b = stod(temp);
+    //   }
+    //
+    //   getline(lidarMCinputCSV,dummyLine,','); // throw away variable description
+    //   getline(lidarMCinputCSV,temp,'\n'); // load file  variable
+    //   Dmin = stod(temp);
+    //   getline(lidarMCinputCSV,dummyLine,','); // throw away variable description
+    //   getline(lidarMCinputCSV,temp,'\n'); // load file  variable
+    //   Dmax = stod(temp);
+    //   getline(lidarMCinputCSV,dummyLine,','); // throw away variable description
+    //   getline(lidarMCinputCSV,temp,'\n'); // load file  variable
+    //   k = stod(temp);
+    //   getline(lidarMCinputCSV,dummyLine,','); // throw away variable description
+    //   getline(lidarMCinputCSV,temp,'\n'); // load file  variable
+    //   jungeSlope = stod(temp);
+    // }
       ///////////////////////////////////
      ///// Define Lidar Parameters /////
     ///////////////////////////////////
@@ -159,7 +167,10 @@ int main (){
 
     // Mie Parameters //
     double refMed = 1.33; // Refractive Index of Water
-    complex<double> refRel = complex<double>(nRe,nIm); // refRel stores the refractive index as a complex double
+
+    for (int i=0; i<nClass; i++){
+      refRel[i] = complex<double>(nRe[i],nIm[i]); // refRel stores the refractive index as a complex double
+    }
 
     // Wavelength
     double lambda = 0.532; // lidar wavelength in a vaccuum (um)
@@ -187,7 +198,7 @@ int main (){
     // Initialize Particle Size Arrays
     double radius[diamBin]; double D[diamBin]; double Dm[diamBin]; // initialize particle radius and diameters in um and m
     double sizeParam[diamBin]; // initialie mie size parameter
-    double diffNumDistribution[diamBin]; //initialize array containing a differential number distribution of particles diameters
+    double diffNumDistribution[diamBin][nClass]; //initialize array containing a differential number distribution of particles diameters
 
     // Diameter Array
     for (int i=0; i<diamBin; i++){ // generate an array of particle diameters
@@ -204,44 +215,50 @@ int main (){
     }
 
     // Define Jungian Distribution //
-    for (int i = 0;i<diamBin; i++){
-        diffNumDistribution[i] = k*pow((D[i]/D[0]),(-1*jungeSlope)); // # of particles m^-3 um^-1
+    for (int i = 0;i<nClass; i++){
+      for (int j = 0;j<diamBin; j++){
+        diffNumDistribution[j][i] = k[j]*pow((D[i]/D[0]),(-1*jungeSlope[j])); // # of particles m^-3 um^-1
+      }
     }
+
     ///////////////////////////////////////////////////
     ////// Mie Output Variables and Pointers /////////
     /////////////////////////////////////////////////
 
-    double Qscat; double Qext; double Qabs; double Qback;  // Mie scattering efficiencies
+    // Scattering Efficiencies
+    double Qscat[nClass]; double Qext[nClass]; double Qabs[nClass]; double Qback[nClass];  // Mie scattering efficiencies
     double* Qscat_p = &Qscat; double* Qext_p = &Qext; double* Qabs_p = &Qabs; double* Qback_p = &Qback; // pointers to Mie Scattering efficiencies
-    double Qb[diamBin]; double Qc[diamBin]; double Qa[diamBin]; double Qba[diamBin];
-    complex<double> S1[2*nang]; complex<double> S2[2*nang];
+    double Qb[diamBin][nClass]; double Qc[diamBin][nClass]; double Qa[diamBin][nClass]; double Qba[diamBin][nClass];
+
+    // Scattering Matrix Elements
+    complex<double> S1[2*nang][nClass]; complex<double> S2[2*nang][nClass];
     complex<double>* S1_p = S1; complex<double>* S2_p = S2;
 
     //IOP Stufffff
-    double aInt[diamBin];
-    double bInt[diamBin];
-    double cInt[diamBin];
+    double aInt[diamBin][nClass];
+    double bInt[diamBin][nClass];
+    double cInt[diamBin][nClass];
 
     // Mueller Matrix elements
-    double s11[nangTot][diamBin];
-    double s12[nangTot][diamBin];
-    double s33[nangTot][diamBin];
-    double s34[nangTot][diamBin];
+    double s11[nangTot][diamBin][nClass];
+    double s12[nangTot][diamBin][nClass];
+    double s33[nangTot][diamBin][nClass];
+    double s34[nangTot][diamBin][nClass];
 
-    double integrandS11[nangTot][diamBin];
-    double integrandS12[nangTot][diamBin];
-    double integrandS33[nangTot][diamBin];
-    double integrandS34[nangTot][diamBin];
+    double integrandS11[nangTot][diamBin][nClass];
+    double integrandS12[nangTot][diamBin][nClass];
+    double integrandS33[nangTot][diamBin][nClass];
+    double integrandS34[nangTot][diamBin][nClass];
 
-    double integrandArray11[diamBin];
-    double integrandArray12[diamBin];
-    double integrandArray33[diamBin];
-    double integrandArray34[diamBin];
+    double integrandArray11[diamBin][nClass];
+    double integrandArray12[diamBin][nClass];
+    double integrandArray33[diamBin][nClass];
+    double integrandArray34[diamBin][nClass];
 
-    double s11bar[nangTot];
-    double s12bar[nangTot];
-    double s33bar[nangTot];
-    double s34bar[nangTot];
+    double s11bar[nangTot][nClass];
+    double s12bar[nangTot][nClass];
+    double s33bar[nangTot][nClass];
+    double s34bar[nangTot][nClass];
 
     double compFunction[nangTot];
     double compFunctionI;
@@ -295,19 +312,21 @@ int main (){
 
     // Mie Calculations for Each Size Parameter in the distribution
     //j+1 is used to convert from fortran indexing to c++indexing
-    for (int i = 0; i<diamBin; i++){
-      bhmie(sizeParam[i], refRel, nang, Qscat_p, Qext_p, Qabs_p, Qback_p, S1_p, S2_p);
-      for (int j = 0; j<nangTot; j++){
-        s11[j][i] = 0.5 * (pow(abs(S2[j+1]),2) + pow(abs(S1[j+1]),2));
-        s12[j][i] = 0.5 * (pow(abs(S2[j+1]),2) - pow(abs(S1[j+1]),2));
-        s33[j][i] = real(S1[j+1]*conj(S2[j+1]));
-        s34[j][i] = imag(S2[j+1]*conj(S1[j+1]));
+    for (int class_iter=0; class_iter<nClass; class_iter++){
+      for (int size_iter=0; size_iter<diamBin; size_iter++){
+        bhmie(sizeParam[size_iter], refRel[class_iter], nang, Qscat_p, Qext_p, Qabs_p, Qback_p, S1_p, S2_p);
+        for (int angle_iter=0; angle_iter<nClass; angle_iter++){
+          s11[angle_iter][size_iter][class_iter] = 0.5 * (pow(abs(S2[angle_iter+1]),2) + pow(abs(S1[angle_iter+1]),2));
+          s12[angle_iter][size_iter][class_iter] = 0.5 * (pow(abs(S2[angle_iter+1]),2) - pow(abs(S1[angle_iter+1]),2));
+          s33[angle_iter][size_iter][class_iter] = real(S1[angle_iter+1]*conj(S2[angle_iter+1]));
+          s34[angle_iter][size_iter][class_iter] = imag(S2[angle_iter+1]*conj(S1[angle_iter+1]));
+        }
+        Qb[size_iter][class_iter]=Qscat_p[0]; // scattering efficiency
+        Qa[size_iter][class_iter]=Qabs_p[0]; // absorption efficiency
+        Qc[size_iter][class_iter]=Qext_p[0]; // extinction efficiency
+        Qba[size_iter][class_iter]=Qback_p[0];
+        //cout << sizeParam[i] << endl;
       }
-      Qb[i]=Qscat_p[0]; // scattering efficiency
-      Qa[i]=Qabs_p[0]; // absorption efficiency
-      Qc[i]=Qext_p[0]; // extinction efficiency
-      Qba[i]=Qback_p[0];
-      //cout << sizeParam[i] << endl;
     }
 
     // Define integrand to calculate bulk mueller atrix properties
