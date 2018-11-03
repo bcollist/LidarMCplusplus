@@ -493,7 +493,7 @@ int main (){
 
                         // Add Pathlength to Distance Vector
                         rTotal -= (r-(fd *r )); // calculate the distance;
-                        distance.push_back(rTotal/2); // append the total distance travelled by the photon to the distance vector
+                        distance.push_back(rTotal); // append the total distance travelled by the photon to the distance vector
 
                         // Create unpolarized signal //
                         signalWeight.push_back(weight); // append photon weight (omega^n) to signal weight vector
