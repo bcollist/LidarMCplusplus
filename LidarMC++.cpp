@@ -1,4 +1,4 @@
-seawaterMuellerCSV#include <cstdlib> // contains the standard c++ libraries
+#include <cstdlib> // contains the standard c++ libraries
 #include <cmath> // contains the c++ math libraries
 #include <iostream> // contains input/output functions (ie. cout <<)
 #include <fstream> // contains function that allow file manipulation
@@ -13,6 +13,7 @@ seawaterMuellerCSV#include <cstdlib> // contains the standard c++ libraries
 #include "source_params.hpp" // defines source parameters
 #include "bhmie.hpp" // Mie Code translated from Bohren and Huffman
 #include "photon_tracking.hpp" // contains photon tracking functions
+#include "IOPs.hpp"
 // #include "detector_params.hpp" // defines source parameters
 
 #include "spline.hpp" // https://github.com/ttk592/spline/
@@ -34,7 +35,6 @@ double intersectionPointY(double x1,double y1,double z1,double x2,double y2,doub
 
 // Mueller Matrix Math
 arma::mat updateStokes(arma::mat stokes, arma::mat mueller, double phi, double gamma); // update photon stokes vector
-double gammaCalc(double muz1, double muz2, double theta, double phi); // calculate the rotation angle
 
 // Mie Calculations
 double trapz(double x[], double y[], int size); // trapezoidal integration function
@@ -210,7 +210,6 @@ int main (){
     // Mie Parameters //
     double refMed = 1.33; // Refractive Index of Water
     complex<double> refRel = complex<double>(nRe,nIm); // refRel stores the refractive index as a complex double
-
     double lambdaMed = lambda/refMed; // Lidar Wavelength in Medium (um)
     double kMed = 2*pi/(lambdaMed*1e-6); // Lidar wavenumber in Medium; convert lambda to (m)
 
@@ -260,11 +259,6 @@ int main (){
     ////// Mie Output Variables and Pointers /////////
     /////////////////////////////////////////////////
 
-    double Qscat; double Qext; double Qabs; double Qback;  // Mie scattering efficiencies
-    double* Qscat_p = &Qscat; double* Qext_p = &Qext; double* Qabs_p = &Qabs; double* Qback_p = &Qback; // pointers to Mie Scattering efficiencies
-    double Qb[diamBin]; double Qc[diamBin]; double Qa[diamBin]; double Qba[diamBin];
-    complex<double> S1[2*nang]; complex<double> S2[2*nang];
-    complex<double>* S1_p = S1; complex<double>* S2_p = S2;
 
     //IOP Stufffff
     double aInt[diamBin];
@@ -308,7 +302,7 @@ int main (){
     string strS12;
     string strS33;
 
-
+    // Load Mueller Matrix
     ifstream seawaterMuellerCSV("seawaterVSFZHH.csv"); // csv file containing the mueller matrix of seawater
     int i = 1;
     if(seawaterMuellerCSV.is_open()){
@@ -337,30 +331,21 @@ int main (){
       seawaterS33[i] = stod(storageS33[i]);
     }
 
-    ifstream popeandfryCSV("popeandfry.csv"); // csv file containing the mueller matrix of seawater
-    int i = 1;
-    if(popeandfryCSV.is_open()){
-      while (popeandfryCSV.good()){
-          getline(seawaterMuellerCSV,lambdaPF,',');
-          getline(seawaterMuellerCSV,aPF,'\n');
-
-          lambdaPF_storage.push_back(lambdaPF);
-          aPF_storage.push_back(aPF);
-
-          i++;
-      }
-    }
-    else{
-      cout << "Error Opening" << endl;
-    }
       /////////////////////////////////////////////////
      ////////////// Mie Calculations /////////////////
     /////////////////////////////////////////////////
 
     // Mie Calculations for Each Size Parameter in the distribution
     //j+1 is used to convert from fortran indexing to c++indexing
+    double Qscat; double Qext; double Qabs; double Qback;  // Mie scattering efficiencies
+    double* Qscat_p = &Qscat; double* Qext_p = &Qext; double* Qabs_p = &Qabs; double* Qback_p = &Qback; // pointers to Mie Scattering efficiencies
+    double Qb[diamBin]; double Qc[diamBin]; double Qa[diamBin]; double Qba[diamBin];
+    complex<double> S1[2*nang]; complex<double> S2[2*nang];
+    complex<double>* S1_p = S1; complex<double>* S2_p = S2;
+
     for (int i = 0; i<diamBin; i++){
       bhmie(sizeParam[i], refRel, nang, Qscat_p, Qext_p, Qabs_p, Qback_p, S1_p, S2_p);
+
       for (int j = 0; j<nangTot; j++){
         s11[j][i] = 0.5 * (pow(abs(S2[j+1]),2) + pow(abs(S1[j+1]),2));
         s12[j][i] = 0.5 * (pow(abs(S2[j+1]),2) - pow(abs(S1[j+1]),2));
@@ -371,7 +356,6 @@ int main (){
       Qa[i]=Qabs_p[0]; // absorption efficiency
       Qc[i]=Qext_p[0]; // extinction efficiency
       Qba[i]=Qback_p[0];
-      //cout << sizeParam[i] << endl;
     }
 
     // Define integrand to calculate bulk mueller matrix properties
@@ -423,6 +407,7 @@ int main (){
       aInt[i] = Qa[i] * pi/4 *(D[i]*1E-6)*(D[i]*1E-6) * diffNumDistribution[i];
       cInt[i] = Qc[i] * pi/4 *(D[i]*1E-6)*(D[i]*1E-6) * diffNumDistribution[i];
     }
+    
     for (int i = 0; i<diamBin; i++){
       Dm[i] = D[i] * 1E-6; // diameter converted to meters
     }
@@ -430,9 +415,12 @@ int main (){
     if (runType == 1){
       // IOPs - calculated from Mie Theory
       a = trapz(Dm,aInt,diamBin); // absorption coefficient(m^-1)
-      a += 0.0444; // add the absorption coefficient of water (Pope and Fry)
+      double aw;
+      aw = getPopeandFry(lambda);
+      a += aw; // add the absorption coefficient of water (Pope and Fry)
       b = trapz(Dm,bInt,diamBin); // scattering coefficient (m^-1)
       //c = trapz(Dm,cInt,diamBin); // beam attenuation coefficient (m^-1)
+
     }
     c = a+b;
     omega = b/c; // single scattering albedo

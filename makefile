@@ -2,7 +2,7 @@
 CC=g++
 
 # Any compiler flags
-CFLAG = -std=c++11 -O2
+CFLAG = -std=c++11
 
 # Build Target Executable
 TARGET = LidarMC++
@@ -11,7 +11,7 @@ TARGET = LidarMC++
 LINKER = -larmadillo
 
 # SOURCES
-SOURCES = bhmie.cpp photon_tracking.cpp
+SOURCES = bhmie.cpp photon_tracking.cpp IOPs.cpp
 
 # top-level rule, to compile everything.
 all: $(TARGET)

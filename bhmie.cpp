@@ -1,5 +1,6 @@
 #include "bhmie.hpp"
 #include "constants.hpp"
+#include "iostream"
 
 using namespace std;
 
@@ -119,7 +120,6 @@ int bhmie(double x, complex<double> refrel, int nang, double* Qscat_p, double* Q
     Qabs_f = Qext_f-Qscat_f;
     //Note: Qback is not Qbb, but the radar back scattering.
     Qback_f=(4.0/(x*x))*(abs(S1[2*nang-1])*abs(S1[2*nang-1]));
-    //cout << "Qext_f = " << Qext_f << endl;
 
 
     // Move scattering efficiencies out of the function
