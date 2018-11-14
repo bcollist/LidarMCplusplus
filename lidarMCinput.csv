@@ -1,5 +1,16 @@
 fileID,run
 runType(1or2),2
+xl,0.0
+yl,0.0
+zl,0.0
+Isrc,1.0
+Qsrc,-1.0
+Usrc,0.0
+Vsrc,0.0
+mux,0
+muy,0
+muz,1
+lambda,0.532
 nPhotons,1000000
 FOV(degrees),10
 refReal,1.05

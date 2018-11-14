@@ -1,4 +1,4 @@
-#include <cstdlib> // contains the standard c++ libraries
+seawaterMuellerCSV#include <cstdlib> // contains the standard c++ libraries
 #include <cmath> // contains the c++ math libraries
 #include <iostream> // contains input/output functions (ie. cout <<)
 #include <fstream> // contains function that allow file manipulation
@@ -11,9 +11,9 @@
 
 #include "constants.hpp" // defines constants (pi and i)
 #include "source_params.hpp" // defines source parameters
-// #include "detector_params.hpp" // defines source parameters
 #include "bhmie.hpp" // Mie Code translated from Bohren and Huffman
 #include "photon_tracking.hpp" // contains photon tracking functions
+// #include "detector_params.hpp" // defines source parameters
 
 #include "spline.hpp" // https://github.com/ttk592/spline/
 #include "erfinv.hpp" // https://gist.github.com/lakshayg/d80172fe5ae3c5d2c2aedb53c250320e
@@ -26,11 +26,6 @@ using namespace std;
 // Trig Stuuuff
 double rad2Deg(double); // convert radians to degrees
 double deg2Rad(double); // convert degrees to radians
-
-// // Direction Cosine Functions
-// double updateDirCosX(double theta, double phi, double mux, double muy, double muz); // update X direction cosine
-// double updateDirCosY(double theta, double phi, double mux, double muy, double muz); // update Y direction cosine
-// double updateDirCosZ(double theta, double phi, double mux, double muy, double muz); // update Z direction cosine
 
 // Detector FOV Calculations
 double intersectionAngle(double x1,double y1,double z1,double x2,double y2,double z2); // angle of intersection between detector and photon trajectory
@@ -90,18 +85,67 @@ int main (){
       getline(lidarMCinputCSV,dummyLine,','); // throw away variable description
       getline(lidarMCinputCSV,fileID,'\n'); // load fileID to name output files
       cout << fileID << endl;
+
       getline(lidarMCinputCSV,dummyLine,','); // throw away variable description
       getline(lidarMCinputCSV,temp,'\n'); // load runType into temporary variable
       runType = stoi(temp); // store runType as an integer
+
+      // Source Position
+      getline(lidarMCinputCSV,dummyLine,','); // throw away variable description
+      getline(lidarMCinputCSV,temp,'\n'); // load # of photons to be run into temporary variable
+      xl = stod(temp); // store x-position of source as an double
+      getline(lidarMCinputCSV,dummyLine,','); // throw away variable description
+      getline(lidarMCinputCSV,temp,'\n'); // load # of photons to be run into temporary variable
+      yl = stod(temp); // store y-position of source as an double
+      getline(lidarMCinputCSV,dummyLine,','); // throw away variable description
+      getline(lidarMCinputCSV,temp,'\n'); // load # of photons to be run into temporary variable
+      zl = stod(temp); // store z-position  of source as an double
+
+      // Source Polarization
+      getline(lidarMCinputCSV,dummyLine,','); // throw away variable description
+      getline(lidarMCinputCSV,temp,'\n'); // load # of photons to be run into temporary variable
+      Isrc = stod(temp); // store number of photons as an integer
+      getline(lidarMCinputCSV,dummyLine,','); // throw away variable description
+      getline(lidarMCinputCSV,temp,'\n'); // load # of photons to be run into temporary variable
+      Qsrc = stod(temp); // store number of photons as an integer
+      getline(lidarMCinputCSV,dummyLine,','); // throw away variable description
+      getline(lidarMCinputCSV,temp,'\n'); // load # of photons to be run into temporary variable
+      Usrc = stod(temp); // store number of photons as an integer
+      getline(lidarMCinputCSV,dummyLine,','); // throw away variable description
+      getline(lidarMCinputCSV,temp,'\n'); // load # of photons to be run into temporary variable
+      Vsrc = stod(temp); // store number of photons as an integer
+
+      // Source Initial Direction
+      getline(lidarMCinputCSV,dummyLine,','); // throw away variable description
+      getline(lidarMCinputCSV,temp,'\n'); // load # of photons to be run into temporary variable
+      muxsrc = stod(temp); // store number of photons as an integer
+      getline(lidarMCinputCSV,dummyLine,','); // throw away variable description
+      getline(lidarMCinputCSV,temp,'\n'); // load # of photons to be run into temporary variable
+      muysrc = stod(temp); // store number of photons as an integer
+      getline(lidarMCinputCSV,dummyLine,','); // throw away variable description
+      getline(lidarMCinputCSV,temp,'\n'); // load # of photons to be run into temporary variable
+      muzsrc = stod(temp); // store number of photons as an integer
+
+      // Source Wavelength
+      getline(lidarMCinputCSV,dummyLine,','); // throw away variable description
+      getline(lidarMCinputCSV,temp,'\n'); // load # of photons to be run into temporary variable
+      lambda = stod(temp); // store number of photons as an integer
+
+      // Number of photons to trace
       getline(lidarMCinputCSV,dummyLine,','); // throw away variable description
       getline(lidarMCinputCSV,temp,'\n'); // load # of photons to be run into temporary variable
       nPhotons = stoi(temp); // store number of photons as an integer
+
+      // Detector Field of View
       getline(lidarMCinputCSV,dummyLine,','); // throw away variable description
       getline(lidarMCinputCSV,temp,'\n'); // load FOV into temporary variable
       FOV = stod(temp); // store FOV as a double
+
+      // Particle real refractive index
       getline(lidarMCinputCSV,dummyLine,','); // throw away variable description
       getline(lidarMCinputCSV,temp,'\n'); // load the real refractive index into temporary variable
       nRe = stod(temp); // store the real refractive index as a double
+      // Particle imaginary refractive index
       getline(lidarMCinputCSV,dummyLine,','); // throw away variable description
       getline(lidarMCinputCSV,temp,'\n'); // load imaginary refractive indes into temporary variable
       nIm = stod(temp); // store the imaginary refractive index as a double
@@ -120,15 +164,19 @@ int main (){
       b = stod(temp);
       }
 
+      // Particle minimum diameter (um)
       getline(lidarMCinputCSV,dummyLine,','); // throw away variable description
       getline(lidarMCinputCSV,temp,'\n'); // load file  variable
       Dmin = stod(temp);
+      // Particle maximum diameter (um)
       getline(lidarMCinputCSV,dummyLine,','); // throw away variable description
       getline(lidarMCinputCSV,temp,'\n'); // load file  variable
       Dmax = stod(temp);
+      // Differential number concentration of particles at Dmin
       getline(lidarMCinputCSV,dummyLine,','); // throw away variable description
       getline(lidarMCinputCSV,temp,'\n'); // load file  variable
       k = stod(temp);
+      // Junge slope of particle size distribution
       getline(lidarMCinputCSV,dummyLine,','); // throw away variable description
       getline(lidarMCinputCSV,temp,'\n'); // load file  variable
       jungeSlope = stod(temp);
@@ -139,7 +187,7 @@ int main (){
 
 
     // Detector Parameters //
-    double detectorRad = 1.5E-1; // detector radius
+    double detectorRad = 1.5E-1; // detector radius(m)
     FOV=deg2Rad(FOV); // convert FOV from degrees to radians
 
     double xd = 0.0; double yd = 0.0; double zd = 0.0; // position of the detector in (m)
@@ -163,10 +211,9 @@ int main (){
     double refMed = 1.33; // Refractive Index of Water
     complex<double> refRel = complex<double>(nRe,nIm); // refRel stores the refractive index as a complex double
 
-    // Wavelength
-    double lambda = 0.532; // lidar wavelength in a vaccuum (um)
     double lambdaMed = lambda/refMed; // Lidar Wavelength in Medium (um)
     double kMed = 2*pi/(lambdaMed*1e-6); // Lidar wavenumber in Medium; convert lambda to (m)
+
     // Angles
     const int nang = 455; // number of angles between 0-90
     const int nangTot = (2*nang-1);
@@ -262,13 +309,13 @@ int main (){
     string strS33;
 
 
-    ifstream seawaterCSV("seawaterVSFZHH.csv"); // csv file containing the mueller matrix of seawater
+    ifstream seawaterMuellerCSV("seawaterVSFZHH.csv"); // csv file containing the mueller matrix of seawater
     int i = 1;
-    if(seawaterCSV.is_open()){
-      while (seawaterCSV.good()){
-          getline(seawaterCSV,strS11,',');
-          getline(seawaterCSV,strS12,',');
-          getline(seawaterCSV,strS33,'\n');
+    if(seawaterMuellerCSV.is_open()){
+      while (seawaterMuellerCSV.good()){
+          getline(seawaterMuellerCSV,strS11,',');
+          getline(seawaterMuellerCSV,strS12,',');
+          getline(seawaterMuellerCSV,strS33,'\n');
 
           storageS11.push_back(strS11);
           storageS12.push_back(strS12);
@@ -290,7 +337,22 @@ int main (){
       seawaterS33[i] = stod(storageS33[i]);
     }
 
+    ifstream popeandfryCSV("popeandfry.csv"); // csv file containing the mueller matrix of seawater
+    int i = 1;
+    if(popeandfryCSV.is_open()){
+      while (popeandfryCSV.good()){
+          getline(seawaterMuellerCSV,lambdaPF,',');
+          getline(seawaterMuellerCSV,aPF,'\n');
 
+          lambdaPF_storage.push_back(lambdaPF);
+          aPF_storage.push_back(aPF);
+
+          i++;
+      }
+    }
+    else{
+      cout << "Error Opening" << endl;
+    }
       /////////////////////////////////////////////////
      ////////////// Mie Calculations /////////////////
     /////////////////////////////////////////////////
@@ -312,7 +374,7 @@ int main (){
       //cout << sizeParam[i] << endl;
     }
 
-    // Define integrand to calculate bulk mueller atrix properties
+    // Define integrand to calculate bulk mueller matrix properties
     for (int i=0; i<diamBin; i++){
       for (int j=0; j<nangTot; j++){
         integrandS11[j][i] = diffNumDistribution[i] * s11[j][i]; // good
@@ -438,6 +500,10 @@ int main (){
 ///////////////////////////////////////////////////
 /////////////// Photon Tracking  /////////////////
 /////////////////////////////////////////////////
+
+    double threshold = 0.01; // photon weight threshold to enter roulette
+    double rouletteWeight = 0.1; // fraction of photons surviving roulette
+
     // Main Code
     for (int i = 0; i < nPhotons; ++i){      // loop through each individual photon
 
@@ -445,9 +511,9 @@ int main (){
         double x1 = 0.0; double y1 = 0.0; double z1 = 0.0; // initialize photon position 1
         double x2; double y2; double z2 ; // initialize calculation positions for photons
 
-        double mux1 = 0;
-        double muy1 = 0;
-        double muz1 = 1; // initialize new direction cosine variables
+        double mux1 = muxsrc;
+        double muy1 = muysrc;
+        double muz1 = muzsrc; // initialize new direction cosine variables
         double mux2; double muy2; double muz2; // initialize new direction cosine calculation variables
 
 
@@ -456,14 +522,12 @@ int main (){
         double rTotal = 0; // total pathlength variable
         int nScat = 0; // number of scattering events so far
         double weight = 1; // weight of a photon
-        double threshold = 0.01; // photon weight threshold to enter roulette
-        double rouletteWeight = 0.1; // fraction of photons surviving roulette
 
         // Polarization
-        stokes <<  1  << arma::endr     // initialize vertically polarized photon
-               << -1  << arma::endr
-               <<  0  << arma::endr
-               <<  0  << arma::endr;
+        stokes <<  Isrc  << arma::endr     // initialize vertically polarized photon
+               <<  Qsrc  << arma::endr
+               <<  Usrc  << arma::endr
+               <<  Vsrc  << arma::endr;
 
         while (status == 1) {   // while the photon is still alive.....
 
