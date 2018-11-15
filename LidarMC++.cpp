@@ -290,46 +290,17 @@ int main (){
     double compFunctionI;
     double compFunctionC[nangTot];
 
-      /////////////////////////////////////////////////
-     ///// Variables loaded from other files /////////
-    /////////////////////////////////////////////////
+      //////////////////////////////////////////////////////////////
+     ///// Import Mueller Matrix of  Seawater from ZHH 2009 //////
+    //////////////////////////////////////////////////////////////
 
-    vector<string> storageS11;
-    vector<string> storageS12;
-    vector<string> storageS33;
+    vector<double> seawaterS11;
+    vector<double> seawaterS12;
+    vector<double> seawaterS33;
 
-    string strS11;
-    string strS12;
-    string strS33;
-
-    // Load Mueller Matrix
-    ifstream seawaterMuellerCSV("seawaterVSFZHH.csv"); // csv file containing the mueller matrix of seawater
-    int i = 1;
-    if(seawaterMuellerCSV.is_open()){
-      while (seawaterMuellerCSV.good()){
-          getline(seawaterMuellerCSV,strS11,',');
-          getline(seawaterMuellerCSV,strS12,',');
-          getline(seawaterMuellerCSV,strS33,'\n');
-
-          storageS11.push_back(strS11);
-          storageS12.push_back(strS12);
-          storageS33.push_back(strS33);
-
-          i++;
-      }
-    }
-    else{
-      cout << "Error Opening" << endl;
-    }
-    double seawaterS11[storageS11.size()];
-    double seawaterS12[storageS11.size()];
-    double seawaterS33[storageS11.size()];
-
-    for (int i = 0; i<storageS11.size()-1; i++){
-      seawaterS11[i] = stod(storageS11[i]);
-      seawaterS12[i] = stod(storageS12[i]);
-      seawaterS33[i] = stod(storageS33[i]);
-    }
+    seawaterS11 = getS11water(lambda); // get s11 seawater(lambda)
+    seawaterS12 = getS12water(lambda); // get s12 seawater(lambda)
+    seawaterS33 = getS33water(lambda); // get s33 seawater(lambda)
 
       /////////////////////////////////////////////////
      ////////////// Mie Calculations /////////////////
