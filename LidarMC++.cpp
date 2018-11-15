@@ -407,7 +407,7 @@ int main (){
       aInt[i] = Qa[i] * pi/4 *(D[i]*1E-6)*(D[i]*1E-6) * diffNumDistribution[i];
       cInt[i] = Qc[i] * pi/4 *(D[i]*1E-6)*(D[i]*1E-6) * diffNumDistribution[i];
     }
-    
+
     for (int i = 0; i<diamBin; i++){
       Dm[i] = D[i] * 1E-6; // diameter converted to meters
     }

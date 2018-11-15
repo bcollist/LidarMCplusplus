@@ -1,6 +1,6 @@
 %% Calculate the VSF of Seawater
 
-lambda = 532;
+lambda = [400:1:700];
 Tc = 20;
 theta = [0:90/454:180]'
 S = 35;
@@ -17,7 +17,9 @@ m33 = m33n .* m11;
 
 mExport = [m11 m12 m33];
 %% Export File
-csvwrite('/Users/Brian/Documents/C++/LidarMCplusplus/seawaterVSFZHH.csv',mExport)
+csvwrite('/Users/Brian/Documents/C++/LidarMCplusplus/seawaterVSFZHHM11.csv',m11)
+csvwrite('/Users/Brian/Documents/C++/LidarMCplusplus/seawaterVSFZHHM12.csv',m12)
+csvwrite('/Users/Brian/Documents/C++/LidarMCplusplus/seawaterVSFZHHM33.csv',m33)
 
 
 

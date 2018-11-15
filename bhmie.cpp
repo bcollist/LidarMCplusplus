@@ -120,7 +120,9 @@ int bhmie(double x, complex<double> refrel, int nang, double* Qscat_p, double* Q
     Qabs_f = Qext_f-Qscat_f;
     //Note: Qback is not Qbb, but the radar back scattering.
     Qback_f=(4.0/(x*x))*(abs(S1[2*nang-1])*abs(S1[2*nang-1]));
-
+    cout << Qscat_f << endl;
+    cout << Qext_f<< endl;
+    cout << Qabs_f << endl;
 
     // Move scattering efficiencies out of the function
     *Qscat_p = Qscat_f; // update the value of Qscat in main using a pointer

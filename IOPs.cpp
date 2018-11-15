@@ -60,3 +60,120 @@ double getPopeandFry(double lambda){
 
   return a_water;
 }
+
+vector<double> getS11water(double lambda){
+  int index;
+  string temp;
+  int counter;
+  string s11waterstr;
+  vector<double> s11water;
+
+
+  ifstream s11waterCSV("seawaterVSFZHHM11.csv"); // csv file containing the mueller matrix of seawater
+  if((0.380<lambda) && (lambda<0.724)){
+    lambda = lambda*pow(10,3);
+    cout << "getPopeandFry - wavelength input in um and converted to nm for pope and fry" << endl;
+  }
+  // get the index for the desired wavelength
+  index = getWavelengthIndexZHH(lambda);
+
+  // Extract desired phase function from csv matrix
+  if(s11waterCSV.is_open()){
+    while (s11waterCSV.good()){
+      counter = 0;
+      do{
+        getline(s11waterCSV,temp,',');
+        counter+=1;
+      }while(counter<index);
+      getline(s11waterCSV,s11waterstr,',');
+      getline(s11waterCSV,temp,'\n');
+      s11water.push_back(stod(s11waterstr));
+    }
+  }
+  else{
+    cout << "Error Opening - is the pope and fry data in your directory?" << endl;
+  }
+  return s11water;
+}
+
+vector<double> getS12water(double lambda){
+  int index;
+  string temp;
+  int counter;
+  string s12waterstr;
+  vector<double> s12water;
+
+
+  ifstream s12waterCSV("seawaterVSFZHHM12.csv"); // csv file containing the mueller matrix of seawater
+  if((0.380<lambda) && (lambda<0.724)){
+    lambda = lambda*pow(10,3);
+    cout << "getPopeandFry - wavelength input in um and converted to nm for pope and fry" << endl;
+  }
+  // get the index for the desired wavelength
+  index = getWavelengthIndexZHH(lambda);
+
+  // Extract desired phase function from csv matrix
+  if(s12waterCSV.is_open()){
+    while (s12waterCSV.good()){
+      counter = 0;
+      do{
+        getline(s12waterCSV,temp,',');
+        counter+=1;
+      }while(counter<index);
+      getline(s12waterCSV,s12waterstr,',');
+      getline(s12waterCSV,temp,'\n');
+      s12water.push_back(stod(s12waterstr));
+    }
+  }
+  else{
+    cout << "Error Opening - is the pope and fry data in your directory?" << endl;
+  }
+  return s12water;
+}
+
+vector<double> getS33water(double lambda){
+  int index;
+  string temp;
+  int counter;
+  string s33waterstr;
+  vector<double> s33water;
+
+
+  ifstream s33waterCSV("seawaterVSFZHHM33.csv"); // csv file containing the mueller matrix of seawater
+  if((0.380<lambda) && (lambda<0.724)){
+    lambda = lambda*pow(10,3);
+    cout << "getPopeandFry - wavelength input in um and converted to nm for pope and fry" << endl;
+  }
+  // get the index for the desired wavelength
+  index = getWavelengthIndexZHH(lambda);
+
+  // Extract desired phase function from csv matrix
+  if(s33waterCSV.is_open()){
+    while (s33waterCSV.good()){
+      counter = 0;
+      do{
+        getline(s33waterCSV,temp,',');
+        counter+=1;
+      }while(counter<index);
+      getline(s33waterCSV,s33waterstr,',');
+      getline(s33waterCSV,temp,'\n');
+      s33water.push_back(stod(s33waterstr));
+    }
+  }
+  else{
+    cout << "Error Opening - is the pope and fry data in your directory?" << endl;
+  }
+  return s33water;
+}
+
+
+int getWavelengthIndexZHH(double lambda){
+
+  int nwavelength = 301;
+  double wavelength_start = 400; // first wavelength in array
+  double wavelength_int = 1; // 1nm interval between wavelengths
+  int index = 0;
+
+  index += lambda - wavelength_start*wavelength_int;
+  return index;
+}
